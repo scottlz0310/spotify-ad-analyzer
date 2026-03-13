@@ -15,16 +15,6 @@ _なし_
 
 ### Phase 2 — コア解析パイプライン
 
-- [ ] `feat/repo-scaffold` — プロジェクト骨格
-  - [ ] `pyproject.toml`（uv / ruff / basedpyright / pytest 設定込み）
-  - [ ] `uv.lock` 生成
-  - [ ] `Dockerfile`（`ghcr.io/astral-sh/uv` 採用）
-  - [ ] `docker-compose.yml`（shared/ / data/ マウント）
-  - [ ] `.pre-commit-config.yaml`（ruff-format, ruff, basedpyright）
-  - [ ] `.gitignore` 更新（Python 用：`.venv/` `__pycache__/` `data/` `shared/` `.coverage`）
-  - [ ] `src/__init__.py` / `src/config.py`（環境変数一元管理）
-  - [ ] `tests/__init__.py`
-
 - [ ] `feat/db-schema` — SQLite スキーマ + CRUD
   - [ ] `src/db.py`（`ads` / `segments` / `transcripts` / `voice_embeddings` / `llm_analyses` テーブル定義）
   - [ ] CRUD ヘルパー関数（型注釈必須）
@@ -92,3 +82,15 @@ _なし_
 - [x] `LICENSE` 追加（MIT 2026）
 - [x] `tasks.md` 追加（Phase 2〜4、11 PR 計画）
 - [x] `.github/copilot-instructions.md` 追加（AI エージェント向け規約）
+
+### プロジェクト骨格（feat/repo-scaffold） — 2026-03-13
+
+- [x] `pyproject.toml`（uv / ruff / basedpyright / pytest 設定込み）
+- [x] `uv.lock` 生成
+- [x] `Dockerfile`（`ghcr.io/astral-sh/uv:0.10.0` 採用、CPU 専用）
+- [x] `docker-compose.yml`（shared/ / data/ マウント）
+- [x] `.pre-commit-config.yaml`（ruff v0.15.6 + basedpyright ローカルフック）
+- [x] `.gitignore` 更新（Python 用）
+- [x] `src/__init__.py` / `src/config.py`（環境変数一元管理）
+- [x] `src/main.py`（エントリポイント、本実装は feat/watcher-entrypoint）
+- [x] `tests/__init__.py` / `tests/test_config.py`（monkeypatch + importlib.reload）
