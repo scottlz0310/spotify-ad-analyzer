@@ -1,6 +1,29 @@
-node_modules/
-.env
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+*.egg-info/
 dist/
-*.log
+build/
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# env / secrets
+.env
+
+# project-specific
+shared/
+data/
+
+# OS
 .DS_Store
 Thumbs.db
+
+# editor
+.vscode/
+.idea/

@@ -1,0 +1,12 @@
+services:
+  analyzer:
+    build: .
+    volumes:
+      - ./shared:/app/shared
+      - ./data:/app/data
+    environment:
+      SHARED_DIR: /app/shared
+      DATA_DIR: /app/data
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+      OLLAMA_HOST: ${OLLAMA_HOST:-host.docker.internal:11434}
+    restart: unless-stopped
