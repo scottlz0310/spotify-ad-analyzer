@@ -85,3 +85,10 @@ _なし_
 ### リポジトリ初期整備（Initial commit） — 2026-03-13
 
 - [x] `README.md` / `.gitignore` 追加
+
+### ドキュメント整備（docs/initial-setup） — 2026-03-13
+
+- [x] `README.md` 全面書き直し（アーキテクチャ・パイプライン・uv/Docker 手順）
+- [x] `LICENSE` 追加（MIT 2026）
+- [x] `tasks.md` 追加（Phase 2〜4、11 PR 計画）
+- [x] `.github/copilot-instructions.md` 追加（AI エージェント向け規約）

@@ -7,7 +7,7 @@
 - 解析結果は SQLite（`data/ads.db`）に蓄積
 - Phase 3 以降は Ollama（ローカル LLM）でオフライン解析
 
-詳細仕様は [`spotify-ad-analyzer.md`](spotify-ad-analyzer.md) を参照。（実装後に追加予定）
+詳細仕様は `spotify-ad-analyzer.md` を参照（`feat/docs` PR で追加予定）。
 
 ---
 
@@ -16,7 +16,7 @@
 | 要件 | 内容 |
 |------|------|
 | OS | Windows / macOS / Linux |
-| ランタイム | [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
+| ランタイム | Docker Desktop（Windows / macOS）または Docker Engine（Linux） |
 | 姉妹リポジトリ | [`spotify-ad-recorder`](https://github.com/scottlz0310/spotify-ad-recorder)（WAV ファイルの生成元） |
 
 > ローカル開発（Docker なし）には [uv](https://docs.astral.sh/uv/) が必要です。
@@ -52,6 +52,8 @@ docker compose logs -f analyzer
 ---
 
 ## ローカル開発（uv）
+
+> **注意**: `pyproject.toml` / `uv.lock` は `feat/repo-scaffold` PR 以降で追加されます。以下のコマンドはその PR マージ後に有効になります。
 
 ```bash
 # 仮想環境作成 + 依存関係インストール

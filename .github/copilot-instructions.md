@@ -157,6 +157,8 @@ llm_analyses    -- Ollama 解析結果（商品名・広告種別・要約・ト
 
 ## ツール設定（pyproject.toml 抜粋）
 
+> **注意**: `pyproject.toml` / `.pre-commit-config.yaml` は `feat/repo-scaffold` PR で追加予定です。以下は予定の設定値です。現時点では実ファイルは存在しません。
+
 ### ruff — lint & format
 
 ```toml
