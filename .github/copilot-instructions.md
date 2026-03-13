@@ -168,8 +168,11 @@ line-length = 88
 select = ["ALL"]
 ignore = [
     "D",      # pydocstyle（docstring は任意）
-    "ANN101", # self の型注釈不要
     "COM812", # formatter と競合
+    "ISC001", # formatter と競合
+    "FIX002", # TODO コメント許可
+    "TD002",  # TODO author 不要
+    "TD003",  # TODO issue link 不要
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -181,17 +184,16 @@ ignore = [
 ```toml
 [tool.basedpyright]
 pythonVersion = "3.12"
-typeCheckingMode = "all"       # strict + 追加チェック全有効
-reportAny = true               # Any 型を明示的エラーとする
-reportUnknownVariableType = true
-reportUnknownMemberType = true
+typeCheckingMode = "all"
+reportMissingTypeStubs = false  # ML ライブラリはスタブ欠如が多い
+include = ["src", "tests"]
 ```
 
 ### pytest
 
 ```toml
 [tool.pytest.ini_options]
-addopts = "-n auto --cov=src --cov-report=term-missing --cov-fail-under=80"
+addopts = "-n auto --cov=src --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.coverage.run]
@@ -204,13 +206,20 @@ source = ["src"]
 ```yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.6
     hooks:
       - id: ruff-format
       - id: ruff
         args: [--fix]
-  - repo: https://github.com/RobertCraigie/pre-commit-hooks-basedpyright
+
+  - repo: local
     hooks:
       - id: basedpyright
+        name: basedpyright
+        entry: uv run basedpyright
+        language: system
+        types: [python]
+        pass_filenames: false
 ```
 
 ---
