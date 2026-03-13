@@ -20,14 +20,14 @@
 
 ```bash
 # 仮想環境作成 + 依存関係インストール（初回）
-uv sync --all-extras
+uv sync --all-groups
 
 # pre-commit フック登録（初回のみ）
 uv run pre-commit install
 
 # パッケージ追加
 uv add <package>
-uv add --dev <package>   # 開発依存
+uv add --group dev <package>   # 開発依存
 ```
 
 ---
@@ -156,8 +156,6 @@ llm_analyses    -- Ollama 解析結果（商品名・広告種別・要約・ト
 ---
 
 ## ツール設定（pyproject.toml 抜粋）
-
-> **注意**: `pyproject.toml` / `.pre-commit-config.yaml` は `feat/repo-scaffold` PR で追加予定です。以下は予定の設定値です。現時点では実ファイルは存在しません。
 
 ### ruff — lint & format
 
