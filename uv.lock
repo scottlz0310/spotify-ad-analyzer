@@ -2906,20 +2906,20 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "faster-whisper", specifier = ">=1.2.1" },
-    { name = "numpy", specifier = ">=1.26" },
-    { name = "pyannote-audio", specifier = ">=3.1" },
+    { name = "numpy", specifier = ">=2.4.3" },
+    { name = "pyannote-audio", specifier = ">=4.0.4" },
     { name = "resemblyzer", specifier = ">=0.1.4" },
     { name = "watchdog", specifier = ">=6.0.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "basedpyright", specifier = ">=1.29.0" },
-    { name = "pre-commit", specifier = ">=4.1.0" },
-    { name = "pytest", specifier = ">=8.0.0" },
-    { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "pytest-xdist", specifier = ">=3.6.0" },
-    { name = "ruff", specifier = ">=0.15.0" },
+    { name = "basedpyright", specifier = ">=1.29.5" },
+    { name = "pre-commit", specifier = ">=4.5.1" },
+    { name = "pytest", specifier = ">=8.0.2" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-xdist", specifier = ">=3.8.0" },
+    { name = "ruff", specifier = ">=0.15.6" },
 ]
 
 [[package]]

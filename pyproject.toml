@@ -7,20 +7,20 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 dependencies = [
     "faster-whisper>=1.2.1",
-    "numpy>=1.26",
-    "pyannote-audio>=3.1",
+    "numpy>=2.4.3",
+    "pyannote-audio>=4.0.4",
     "resemblyzer>=0.1.4",
     "watchdog>=6.0.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0.0",
-    "pytest-xdist>=3.6.0",
-    "pytest-cov>=6.0.0",
-    "ruff>=0.15.0",
-    "basedpyright>=1.29.0",
-    "pre-commit>=4.1.0",
+    "pytest>=8.0.2",
+    "pytest-xdist>=3.8.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.6",
+    "basedpyright>=1.29.5",
+    "pre-commit>=4.5.1",
 ]
 
 [build-system]
