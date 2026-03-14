@@ -7,22 +7,20 @@
 
 ## 進行中
 
-### Phase 2 — コア解析パイプライン
+### Phase 3 — LLM 解析（Ollama）
 
-- [x] `feat/docs` — ドキュメント整備
-  - [x] `README.md`（セットアップ・`docker compose up` 起動手順）
-  - [x] `spotify-ad-analyzer.md`（アーキテクチャ仕様書）
+- [x] `feat/llm-analyzer` — Ollama クライアント + プロンプト
+  - [x] `src/llm_analyzer.py`（Ollama REST API クライアント、urllib 使用）
+  - [x] プロンプトテンプレート（商品名・広告種別・スクリプト要約・トーン抽出）
+  - [x] `tests/test_llm_analyzer.py`（Ollama HTTP をモック、14 テスト、カバレッジ 100%）
+  - [x] `src/config.py`: `OLLAMA_MODEL` 環境変数追加
+  - [x] `docker-compose.yml`: `OLLAMA_MODEL` 追加
 
 ---
 
 ## 未着手
 
 ### Phase 3 — LLM 解析（Ollama）
-
-- [ ] `feat/llm-analyzer` — Ollama クライアント + プロンプト
-  - [ ] `src/llm_analyzer.py`（Ollama REST API クライアント）
-  - [ ] プロンプトテンプレート（商品名・広告種別・スクリプト要約・トーン抽出）
-  - [ ] `tests/test_llm_analyzer.py`（Ollama HTTP をモック）
 
 - [ ] `feat/llm-integration` — パイプラインへの LLM 統合
   - [ ] `src/pipeline.py` に LLM ステップ追加

@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `src/llm_analyzer.py` — Ollama REST API クライアント（`analyze_transcript()`、`_parse_response()`、Markdown コードフェンス除去、JSON パース失敗時のフォールバック）
+- `LlmAnalysisResult` — `__slots__` + `@final` + `@override __repr__` 結果クラス（`product_name`・`ad_type`・`summary`・`tone`・`raw_response`）
+- `OllamaError(RuntimeError)` — Ollama 接続失敗・非 JSON レスポンス時の例外クラス
+- `tests/test_llm_analyzer.py` — 17 テスト（HTTP モック、コードフェンス除去、Invalid JSON フォールバック、非 dict JSON 型チェック、カバレッジ 100%）
+- `src/config.py` — `OLLAMA_MODEL` 環境変数追加（デフォルト `llama3.2`）
+- `docker-compose.yml` — `OLLAMA_MODEL` 環境変数追加
 - `src/pipeline.py` — 解析パイプライン統合（transcriber → diarizer → embedder → db 保存、DI 対応、エラー時 `status='error'` 設定）
 - `tests/test_pipeline.py` — 14 テスト（全モジュールをモック、カバレッジ 97%）
 - `src/watcher.py` — watchdog ファイル監視（`spotify_ad_*.wav` を検出して pipeline 実行、`IN_CLOSE_WRITE` 対応、重複実行防止）
