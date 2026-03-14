@@ -7,7 +7,7 @@
 - 解析結果は SQLite（`data/ads.db`）に蓄積
 - Phase 3 以降は Ollama（ローカル LLM）でオフライン解析
 
-詳細仕様は `spotify-ad-analyzer.md` を参照（`feat/docs` PR で追加予定）。
+詳細仕様は [`spotify-ad-analyzer.md`](./spotify-ad-analyzer.md) を参照。
 
 ---
 
@@ -18,6 +18,7 @@
 | OS | Windows / macOS / Linux |
 | ランタイム | Docker Desktop（Windows / macOS）または Docker Engine（Linux） |
 | 姉妹リポジトリ | [`spotify-ad-recorder`](https://github.com/scottlz0310/spotify-ad-recorder)（WAV ファイルの生成元） |
+| Hugging Face トークン | pyannote-audio の話者分離モデル利用に必要（`HF_TOKEN`） |
 
 > ローカル開発（Docker なし）には [uv](https://docs.astral.sh/uv/) が必要です。
 
@@ -31,15 +32,37 @@ git clone https://github.com/scottlz0310/spotify-ad-analyzer.git
 cd spotify-ad-analyzer
 ```
 
-`spotify-ad-recorder` の `shared/` ディレクトリをマウントするか、
-ローカルに `shared/` フォルダを作成して WAV ファイルを配置してください。
+### 環境変数
+
+プロジェクトルートに `.env` ファイルを作成し、以下を設定します。
+
+```dotenv
+# 必須（未設定でもコンテナは起動するが、話者分離で認証エラーが発生してパイプラインが失敗します）
+HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx   # Hugging Face アクセストークン
+
+# 任意（デフォルト値を示す）
+WHISPER_MODEL=small                # tiny / base / small / medium / large-v3
+OLLAMA_HOST=host.docker.internal:11434  # Phase 3: Ollama ホスト
+```
+
+> `HF_TOKEN` の取得: [Hugging Face の設定ページ](https://huggingface.co/settings/tokens) でアクセストークンを生成し、  
+> [`pyannote/speaker-diarization-3.1`](https://huggingface.co/pyannote/speaker-diarization-3.1) モデルへのアクセスを承認してください。
+
+### 共有ディレクトリの準備
+
+`spotify-ad-recorder` の `shared/` をマウントするか、ローカルに作成します。
+
+```powershell
+mkdir shared
+mkdir data
+```
 
 ---
 
 ## 実行
 
 ```bash
-# イメージビルド + コンテナ起動
+# イメージビルド + コンテナ起動（フォアグラウンド）
 docker compose up --build
 
 # バックグラウンド起動
@@ -47,19 +70,20 @@ docker compose up -d --build
 
 # ログ確認
 docker compose logs -f analyzer
+
+# 停止
+docker compose down
 ```
 
 ---
 
 ## ローカル開発（uv）
 
-> **注意**: `pyproject.toml` / `uv.lock` は `feat/repo-scaffold` PR 以降で追加されます。以下のコマンドはその PR マージ後に有効になります。
-
 ```bash
-# 仮想環境作成 + 依存関係インストール
-uv sync --all-extras
+# 仮想環境作成 + 依存関係インストール（初回）
+uv sync --all-groups
 
-# pre-commit フック登録
+# pre-commit フック登録（初回のみ）
 uv run pre-commit install
 
 # テスト（並列 + カバレッジ）
@@ -76,22 +100,30 @@ uv run basedpyright
 ## パイプライン概要
 
 ```
-shared/spotify_ad_*.wav
-        │
-        ▼ watchdog（ファイル監視）
-        ├── faster-whisper     → 文字起こし + タイムスタンプ
-        ├── pyannote-audio     → 話者分離
-        ├── resemblyzer        → Voice Embedding（256-dim）
-        └── SQLite             → data/ads.db
-              ├── [Phase 3] Ollama  → 広告解析テキスト
-              └── [Phase 4] SQL 集計 → パターンレポート
+spotify-ad-recorder
+└── shared/spotify_ad_yyyy-MM-dd_HH-mm-ss.wav
+            │
+            ▼  src/watcher.py（watchdog inotify IN_CLOSE_WRITE）
+            │
+            ▼  src/pipeline.py
+            ├── src/transcriber.py  ─── faster-whisper → 文字起こし + タイムスタンプ
+            ├── src/diarizer.py     ─── pyannote-audio → 話者分離セグメント
+            ├── src/embedder.py     ─── resemblyzer    → Voice Embedding（256-dim）
+            └── src/db.py           ─── SQLite（data/ads.db）
+                  ├── [Phase 3] src/llm_analyzer.py ─ Ollama → 広告テキスト解析
+                  └── [Phase 4] src/pattern_analyzer.py ─ SQL 集計 → パターンレポート
 ```
 
 ---
 
 ## ステータス
 
-現在はリポジトリ初期整備フェーズです。実装は `tasks.md` のタスクに従い進行します。
+| フェーズ | 内容 | 状態 |
+|----------|------|------|
+| Phase 1  | CI・DB・プロジェクト骨格 | ✅ 完了 |
+| Phase 2  | 文字起こし・話者分離・声紋抽出・パイプライン・監視・ドキュメント | ✅ 完了 |
+| Phase 3  | Ollama LLM 解析 | 🔜 未着手 |
+| Phase 4  | パターン分析 CLI | 🔜 未着手 |
 
 ---
 

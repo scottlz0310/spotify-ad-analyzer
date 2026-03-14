@@ -9,20 +9,13 @@
 
 ### Phase 2 — コア解析パイプライン
 
-- [x] `feat/watcher-entrypoint` — ファイル監視 + エントリポイント
-  - [x] `src/watcher.py`（watchdog で `shared/` 監視、`spotify_ad_*.wav` を pipeline へ）
-  - [x] `src/main.py`（watcher 起動・SIGINT/SIGTERM graceful shutdown）
-  - [x] `tests/test_watcher.py` / `tests/test_main.py`
+- [x] `feat/docs` — ドキュメント整備
+  - [x] `README.md`（セットアップ・`docker compose up` 起動手順）
+  - [x] `spotify-ad-analyzer.md`（アーキテクチャ仕様書）
 
 ---
 
 ## 未着手
-
-### Phase 2 — コア解析パイプライン
-
-- [ ] `feat/docs` — ドキュメント整備
-  - [ ] `README.md`（セットアップ・`docker compose up` 起動手順）
-  - [ ] `spotify-ad-analyzer.md`（アーキテクチャ仕様書）
 
 ### Phase 3 — LLM 解析（Ollama）
 

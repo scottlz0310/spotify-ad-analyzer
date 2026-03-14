@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `src/watcher.py` — watchdog ファイル監視（`spotify_ad_*.wav` を検出して pipeline 実行、`IN_CLOSE_WRITE` 対応、重複実行防止）
 - `src/main.py` — エントリポイント実装（ログ設定、DB 初期化、SIGINT/SIGTERM graceful shutdown）
 - `tests/test_watcher.py` / `tests/test_main.py` — 計 17 テスト（カバレッジ 100% / 89%）
+- `spotify-ad-analyzer.md` — アーキテクチャ仕様書（コンポーネント・DB スキーマ・環境変数・将来フェーズ）
+- `README.md` — セットアップ手順刷新（`HF_TOKEN` 取得方法・`docker compose` コマンド・フェーズ別ステータス）
+- `docker-compose.yml` — `HF_TOKEN` 環境変数を追加
 
 ---
 
