@@ -103,6 +103,12 @@ class TestParseResponse:
         assert result.tone is None
         assert result.raw_response == raw
 
+    def test_non_dict_json_returns_all_none_with_raw(self) -> None:
+        raw = json.dumps(["not", "a", "dict"])
+        result = _parse_response(raw)
+        assert result.product_name is None
+        assert result.raw_response == raw
+
     def test_partial_fields_filled(self) -> None:
         raw = json.dumps({"product_name": "Acme", "summary": "Acme does stuff."})
         result = _parse_response(raw)
@@ -174,6 +180,22 @@ class TestAnalyzeTranscript:
         with patch("urllib.request.urlopen", return_value=mock_resp):
             result = analyze_transcript("")
         assert result.raw_response != ""
+
+    def test_non_json_response_body_raises_ollama_error(self) -> None:
+        mock_resp = _MockHttpResponse(b"Internal Server Error")
+        with (
+            patch("urllib.request.urlopen", return_value=mock_resp),
+            pytest.raises(OllamaError, match="non-JSON"),
+        ):
+            _ = analyze_transcript("some transcript")
+
+    def test_non_dict_json_response_raises_ollama_error(self) -> None:
+        mock_resp = _MockHttpResponse(json.dumps(["error", "list"]).encode())
+        with (
+            patch("urllib.request.urlopen", return_value=mock_resp),
+            pytest.raises(OllamaError, match="not a JSON object"),
+        ):
+            _ = analyze_transcript("some transcript")
 
     def test_default_model_from_config(self) -> None:
         payload = json.dumps(

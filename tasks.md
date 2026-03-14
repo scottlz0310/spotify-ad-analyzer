@@ -22,11 +22,6 @@
 
 ### Phase 3 — LLM 解析（Ollama）
 
-- [ ] `feat/llm-analyzer` — Ollama クライアント + プロンプト
-  - [ ] `src/llm_analyzer.py`（Ollama REST API クライアント）
-  - [ ] プロンプトテンプレート（商品名・広告種別・スクリプト要約・トーン抽出）
-  - [ ] `tests/test_llm_analyzer.py`（Ollama HTTP をモック）
-
 - [ ] `feat/llm-integration` — パイプラインへの LLM 統合
   - [ ] `src/pipeline.py` に LLM ステップ追加
   - [ ] `llm_analyses` テーブルへの保存

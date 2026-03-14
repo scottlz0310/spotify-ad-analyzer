@@ -102,11 +102,22 @@ def analyze_transcript(
 
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310
-            body = cast("_OllamaResponse", json.loads(resp.read()))
+            raw_data = resp.read()
     except urllib.error.URLError as exc:
         msg = f"Cannot reach Ollama at {config.OLLAMA_HOST}: {exc}"
         raise OllamaError(msg) from exc
 
+    try:
+        parsed = json.loads(raw_data)
+    except (json.JSONDecodeError, TypeError) as exc:
+        msg = f"Ollama returned non-JSON response: {exc}"
+        raise OllamaError(msg) from exc
+
+    if not isinstance(parsed, dict):
+        msg = f"Ollama response is not a JSON object (got {type(parsed).__name__})"
+        raise OllamaError(msg)
+
+    body = cast("_OllamaResponse", cast("object", parsed))
     raw_response = body.get("response", "")
     _logger.debug("Ollama raw_response length=%d", len(raw_response))
     return _parse_response(raw_response)
@@ -124,7 +135,7 @@ def _parse_response(raw: str) -> LlmAnalysisResult:
         text = "\n".join(lines).strip()
 
     try:
-        data = cast("dict[str, object]", json.loads(text))
+        parsed = json.loads(text)
     except json.JSONDecodeError:
         _logger.warning("LLM response is not valid JSON; storing raw_response only")
         return LlmAnalysisResult(
@@ -134,6 +145,21 @@ def _parse_response(raw: str) -> LlmAnalysisResult:
             tone=None,
             raw_response=raw,
         )
+
+    if not isinstance(parsed, dict):
+        _logger.warning(
+            "LLM response JSON is not an object (got %s); storing raw_response only",
+            type(parsed).__name__,
+        )
+        return LlmAnalysisResult(
+            product_name=None,
+            ad_type=None,
+            summary=None,
+            tone=None,
+            raw_response=raw,
+        )
+
+    data = cast("dict[str, object]", parsed)
 
     def _str_or_none(key: str) -> str | None:
         val = data.get(key)
