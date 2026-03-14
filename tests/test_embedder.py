@@ -13,6 +13,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from src import embedder
 
@@ -183,3 +184,26 @@ def test_embed_coerces_embedding_to_float32() -> None:
         SAMPLE_WAV, encoder=float64_encoder, preprocess_fn=_make_preprocess()
     )
     assert result.embedding.dtype == np.float32
+
+
+# -- shape validation --
+
+
+def test_embed_raises_on_wrong_dim_length() -> None:
+    bad_encoder = MagicMock()
+    bad_encoder.embed_utterance.return_value = np.zeros(128, dtype=np.float32)
+    with pytest.raises(ValueError, match="256"):
+        _ = embedder.embed(
+            SAMPLE_WAV, encoder=bad_encoder, preprocess_fn=_make_preprocess()
+        )
+
+
+def test_embed_raises_on_2d_embedding() -> None:
+    bad_encoder = MagicMock()
+    bad_encoder.embed_utterance.return_value = np.zeros(
+        (_EMBED_DIM, 1), dtype=np.float32
+    )
+    with pytest.raises(ValueError, match=r"shape"):
+        _ = embedder.embed(
+            SAMPLE_WAV, encoder=bad_encoder, preprocess_fn=_make_preprocess()
+        )

@@ -8,6 +8,8 @@ import numpy as np
 if TYPE_CHECKING:
     from pathlib import Path
 
+_EMBEDDING_DIM: int = 256
+
 
 class _VoiceEncoderProtocol(Protocol):
     """Minimal structural type for resemblyzer's VoiceEncoder."""
@@ -92,6 +94,11 @@ def embed(
         preprocess_fn = _load_preprocess_fn()
 
     wav = preprocess_fn(audio_path)
-    return EmbeddingResult(
-        embedding=np.asarray(encoder.embed_utterance(wav), dtype=np.float32)
-    )
+    embedding = np.asarray(encoder.embed_utterance(wav), dtype=np.float32)
+    if embedding.ndim != 1 or embedding.shape[0] != _EMBEDDING_DIM:
+        msg = (
+            f"Expected 1-D embedding of length {_EMBEDDING_DIM},"
+            f" got shape {embedding.shape!r}"
+        )
+        raise ValueError(msg)
+    return EmbeddingResult(embedding=embedding)
