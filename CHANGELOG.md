@@ -9,8 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `src/embedder.py` — resemblyzer 声紋埋め込み（256-dim float32、SQLite BLOB シリアライズ対応）
+- `tests/test_embedder.py` — 14 テスト（resemblyzer をモック、pkg_resources 問題を回避）
+
+---
+
+## [0.4.0] — 2026-03-14
+
+### Added
 - `src/diarizer.py` — pyannote.audio 4.x ラッパー（`DIARIZE_MODEL` / `HF_TOKEN` 環境変数対応、CPU 専用）
-- `tests/test_diarizer.py` — 11 テスト（モック使用、カバレッジ 85%）
+- `tests/test_diarizer.py` — 12 テスト（モック使用、カバレッジ 96%）
 - `src/transcriber.py` — faster-whisper ラッパー（`WHISPER_MODEL` 環境変数対応）
 - `tests/test_transcriber.py` + `tests/fixtures/sample.wav`
 

@@ -7,18 +7,18 @@
 
 ## 進行中
 
-*（現在進行中のタスクはありません）*
-
----
-
-## 未着手
-
 ### Phase 2 — コア解析パイプライン
 
 - [ ] `feat/embedder` — resemblyzer Voice Embedding
   - [ ] `src/embedder.py`（256-dim float32 embedding 生成）
   - [ ] numpy array を SQLite BLOB へシリアライズ / デシリアライズ
   - [ ] `tests/test_embedder.py`
+
+---
+
+## 未着手
+
+### Phase 2 — コア解析パイプライン
 
 - [ ] `feat/pipeline` — パイプライン統合
   - [ ] `src/pipeline.py`（transcriber → diarizer → embedder → db 保存）
