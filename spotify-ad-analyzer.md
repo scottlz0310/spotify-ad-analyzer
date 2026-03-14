@@ -7,7 +7,7 @@
 | ステップ | 技術 | 出力 |
 |----------|------|------|
 | 文字起こし | faster-whisper（CPU int8） | 全文テキスト + タイムスタンプ付きセグメント |
-| 話者分離 | pyannote-audio 3.x | 話者ラベル付き時間区間 |
+| 話者分離 | pyannote-audio 4.x | 話者ラベル付き時間区間 |
 | 声紋抽出 | resemblyzer | 256-dim float32 embedding |
 | 永続化 | SQLite（WAL モード） | `data/ads.db` |
 | LLM 解析 | Ollama（Phase 3） | 商品名・広告種別・要約・トーン |
@@ -217,11 +217,15 @@ services:
       - ./shared:/app/shared   # spotify-ad-recorder の出力先をマウント
       - ./data:/app/data       # SQLite 永続化
     environment:
-      HF_TOKEN: ${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN:-}  # 未設定時は空文字。話者分離機能を使う場合は必須
       WHISPER_MODEL: ${WHISPER_MODEL:-small}
       OLLAMA_HOST: ${OLLAMA_HOST:-host.docker.internal:11434}
     restart: unless-stopped
 ```
+
+> **注意**: `HF_TOKEN` が未設定（または空）でもコンテナは起動しますが、
+> 話者分離ステップ（`diarize()`）で認証エラーが発生し、パイプラインが失敗します。
+> `.env` ファイルへの設定を推奨します。
 
 `Dockerfile` は `python:3.12-slim` ベース。  
 `ghcr.io/astral-sh/uv` から `uv` バイナリを COPY して `uv sync --frozen` でインストール。

@@ -37,7 +37,7 @@ cd spotify-ad-analyzer
 プロジェクトルートに `.env` ファイルを作成し、以下を設定します。
 
 ```dotenv
-# 必須
+# 必須（未設定でもコンテナは起動するが、話者分離で認証エラーが発生してパイプラインが失敗します）
 HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx   # Hugging Face アクセストークン
 
 # 任意（デフォルト値を示す）
