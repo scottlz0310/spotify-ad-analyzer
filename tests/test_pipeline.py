@@ -497,6 +497,6 @@ def test_run_pipeline_result_contains_llm_analysis_field(tmp_path: Path) -> None
         analyze_fn=lambda _: llm_result,
     )
 
-    assert hasattr(result, "llm_analysis")
-    assert isinstance(result.llm_analysis, LlmAnalysisResult)
+    assert result.llm_analysis is llm_result
+    assert result.llm_analysis is not None  # narrow for type checker
     assert result.llm_analysis.summary == "Short spot."

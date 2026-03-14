@@ -141,8 +141,8 @@ def _default_analyze(transcript: str, /) -> LlmAnalysisResult | None:
     """Call Ollama; return None and warn if unreachable (graceful degradation)."""
     try:
         return analyze_transcript(transcript)
-    except OllamaError:
-        _logger.warning("Ollama unavailable; LLM analysis skipped")
+    except OllamaError as exc:
+        _logger.warning("Ollama unavailable; LLM analysis skipped: %s", exc)
         return None
 
 
