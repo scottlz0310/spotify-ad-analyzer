@@ -15,8 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `tests/test_llm_analyzer.py` — 17 テスト（HTTP モック、コードフェンス除去、Invalid JSON フォールバック、非 dict JSON 型チェック、カバレッジ 100%）
 - `src/config.py` — `OLLAMA_MODEL` 環境変数追加（デフォルト `llama3.2`）
 - `docker-compose.yml` — `OLLAMA_MODEL` 環境変数追加
-- `src/pipeline.py` — 解析パイプライン統合（transcriber → diarizer → embedder → db 保存、DI 対応、エラー時 `status='error'` 設定）
-- `tests/test_pipeline.py` — 14 テスト（全モジュールをモック、カバレッジ 97%）
+- `src/pipeline.py` — LLM 解析ステップ統合（`_AnalyzeFnProtocol`・`_default_analyze`・`analyze_fn` DI パラメータ、`OllamaError` 時はログを残して graceful degradation、`db.upsert_llm_analysis` で永続化）
+- `PipelineResult` — `llm_analysis: LlmAnalysisResult | None` フィールド追加
+- `tests/test_pipeline.py` — 既存テストを hermetic 化（`analyze_fn=lambda _: None`）、LLM 結果永続化・スキップ・フィールド検証テスト 3 件追加（計 16 テスト）
 - `src/watcher.py` — watchdog ファイル監視（`spotify_ad_*.wav` を検出して pipeline 実行、`IN_CLOSE_WRITE` 対応、重複実行防止）
 - `src/main.py` — エントリポイント実装（ログ設定、DB 初期化、SIGINT/SIGTERM graceful shutdown）
 - `tests/test_watcher.py` / `tests/test_main.py` — 計 17 テスト（カバレッジ 100% / 89%）

@@ -7,25 +7,11 @@
 
 ## 進行中
 
-### Phase 3 — LLM 解析（Ollama）
-
-- [x] `feat/llm-analyzer` — Ollama クライアント + プロンプト
-  - [x] `src/llm_analyzer.py`（Ollama REST API クライアント、urllib 使用）
-  - [x] プロンプトテンプレート（商品名・広告種別・スクリプト要約・トーン抽出）
-  - [x] `tests/test_llm_analyzer.py`（Ollama HTTP をモック、14 テスト、カバレッジ 100%）
-  - [x] `src/config.py`: `OLLAMA_MODEL` 環境変数追加
-  - [x] `docker-compose.yml`: `OLLAMA_MODEL` 追加
+_なし_
 
 ---
 
 ## 未着手
-
-### Phase 3 — LLM 解析（Ollama）
-
-- [ ] `feat/llm-integration` — パイプラインへの LLM 統合
-  - [ ] `src/pipeline.py` に LLM ステップ追加
-  - [ ] `llm_analyses` テーブルへの保存
-  - [ ] 既存テスト更新 + 統合テスト追加
 
 ### Phase 4 — パターン分析
 
@@ -38,7 +24,20 @@
 
 ## 完了
 
-### resemblyzer 声紋埋め込み（feat/embedder） — 2026-03-14
+### LLM パイプライン統合（feat/llm-integration） — 2026-03-14
+
+- [x] `src/pipeline.py`: `_AnalyzeFnProtocol`・`_default_analyze`（OllamaError 時 graceful degradation）・`analyze_fn` DI パラメータ追加
+- [x] `PipelineResult`: `llm_analysis: LlmAnalysisResult | None` フィールド追加
+- [x] `db.upsert_llm_analysis` で `llm_analyses` テーブルへ永続化
+- [x] `tests/test_pipeline.py`: 既存 13 テスト hermetic 化 + 新規 3 テスト追加（計 16 テスト）
+
+### Ollama クライアント（feat/llm-analyzer） — 2026-03-14
+
+- [x] `src/llm_analyzer.py`（Ollama REST API クライアント、urllib 使用）
+- [x] プロンプトテンプレート（商品名・広告種別・スクリプト要約・トーン抽出）
+- [x] `tests/test_llm_analyzer.py`（Ollama HTTP をモック、17 テスト、カバレッジ 100%）
+- [x] `src/config.py`: `OLLAMA_MODEL` 環境変数追加
+- [x] `docker-compose.yml`: `OLLAMA_MODEL` 追加
 
 - [x] `src/embedder.py`（256-dim float32 embedding 生成、256-dim バリデーション付き）
 - [x] numpy array を SQLite BLOB へシリアライズ / デシリアライズ
