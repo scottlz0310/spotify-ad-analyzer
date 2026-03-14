@@ -268,9 +268,10 @@ def insert_segments(
 ) -> None:
     """Bulk-insert speaker segments for an ad."""
     _ = conn.executemany(
-        "INSERT INTO segments "
-        "(ad_id, speaker, text, start_sec, end_sec) "
-        "VALUES (?, ?, ?, ?, ?)",
+        """
+        INSERT INTO segments (ad_id, speaker, text, start_sec, end_sec)
+        VALUES (?, ?, ?, ?, ?)
+        """,
         [
             (ad_id, s["speaker"], s["text"], s["start_sec"], s["end_sec"])
             for s in segments

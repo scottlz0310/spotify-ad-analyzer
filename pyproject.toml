@@ -42,11 +42,11 @@ ignore = [
     "FIX002", # allow TODO comments
     "TD002",  # TODO missing author
     "TD003",  # TODO missing issue link
-    "PLR0913", # many-arg functions are fine for DB helpers
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "PLR2004"]  # assert + magic values OK in tests
+"tests/**" = ["S101", "PLR2004"]        # assert + magic values OK in tests
+"src/db.py" = ["PLR0913"]               # DB helpers legitimately need many args
 
 # ---------------------------------------------------------------------------
 # basedpyright: type checking (strictest)
@@ -55,8 +55,10 @@ ignore = [
 pythonVersion = "3.12"
 typeCheckingMode = "all"
 reportMissingTypeStubs = false  # many ML libs lack stubs
-reportAny = false               # sqlite3.Row.__getitem__ returns Any; stdlib limitation
-reportImplicitStringConcatenation = false  # multi-line SQL strings are intentional
+# sqlite3.Row.__getitem__ returns Any (stdlib limitation); per-file suppression
+# is not supported in basedpyright's pyproject.toml config — affected code is
+# isolated to the private _row_to_* helpers in src/db.py.
+reportAny = false
 include = ["src", "tests"]
 
 # ---------------------------------------------------------------------------

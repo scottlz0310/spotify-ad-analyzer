@@ -306,7 +306,11 @@ def test_delete_ad_cascades(db_path: Path) -> None:
         )
         db.upsert_transcript(conn, ad_id, "test", "en", "small")
         db.upsert_voice_embedding(conn, ad_id, "SPEAKER_00", bytes(256))
+        db.upsert_llm_analysis(
+            conn, ad_id, '{"raw": "x"}', "TestBrand", "music", "test ad", "upbeat"
+        )
         _ = conn.execute("DELETE FROM ads WHERE id = ?", (ad_id,))
         assert db.get_segments(conn, ad_id) == []
         assert db.get_transcript(conn, ad_id) is None
         assert db.get_voice_embeddings(conn, ad_id) == []
+        assert db.get_llm_analysis(conn, ad_id) is None
