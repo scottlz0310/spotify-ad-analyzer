@@ -7,23 +7,13 @@
 
 ## 進行中
 
-_なし_
+（なし）
 
 ---
 
 ## 未着手
 
-### Phase 1 — CI 整備
-
-- [ ] `feat/ci` — GitHub Actions CI ワークフロー
-  - [ ] `.github/workflows/ci.yml`（push / PR on main で ruff・basedpyright・pytest）
-
 ### Phase 2 — コア解析パイプライン
-
-- [ ] `feat/transcriber` — faster-whisper 文字起こし
-  - [ ] `src/transcriber.py`（`WHISPER_MODEL` 環境変数対応）
-  - [ ] タイムスタンプ付きセグメントを `TypedDict` で返す
-  - [ ] `tests/test_transcriber.py` + `tests/fixtures/sample.wav`（ダミー音声）
 
 - [ ] `feat/diarizer` — pyannote-audio 話者分離
   - [ ] `src/diarizer.py`（pyannote-audio 3.x ラッパー）
@@ -72,11 +62,24 @@ _なし_
 
 ## 完了
 
+### faster-whisper 文字起こし（feat/transcriber） — 2026-03-14
+
+- [x] `src/transcriber.py`（`WHISPER_MODEL` 環境変数対応、CPU int8 推論）
+- [x] `TranscriptSegment` / `TranscriptResult` dataclass 相当クラス
+- [x] `tests/test_transcriber.py`（13 テスト、モック使用、カバレッジ 98%）
+- [x] `tests/fixtures/sample.wav`（0.5 秒無音 WAV ダミー）
+
 ### SQLite スキーマ + CRUD（feat/db-schema） — 2026-03-14
 
 - [x] `src/db.py`（`ads` / `segments` / `transcripts` / `voice_embeddings` / `llm_analyses` テーブル定義）
 - [x] CRUD ヘルパー関数（TypedDict + AdStatus Literal、型注釈必須）
 - [x] `tests/test_db.py`（24 テスト、カバレッジ 95%、FK カスケード削除含む）
+
+### CI 整備（feat/ci） — 2026-03-14
+
+- [x] `.github/workflows/ci.yml`（push / PR on main で ruff・basedpyright・pytest・Codecov）
+- [x] `renovate.json`（依存関係自動更新）
+- [x] `pyproject.toml`: `--cov-report=xml` 追加
 
 ### リポジトリ初期整備（Initial commit） — 2026-03-13
 
