@@ -7,18 +7,13 @@
 
 ## 進行中
 
-（なし）
+*（現在進行中のタスクはありません）*
 
 ---
 
 ## 未着手
 
 ### Phase 2 — コア解析パイプライン
-
-- [ ] `feat/diarizer` — pyannote-audio 話者分離
-  - [ ] `src/diarizer.py`（pyannote-audio 3.x ラッパー）
-  - [ ] `SPEAKER_XX` ラベルと時間範囲を `TypedDict` で返す
-  - [ ] `tests/test_diarizer.py`（モック使用）
 
 - [ ] `feat/embedder` — resemblyzer Voice Embedding
   - [ ] `src/embedder.py`（256-dim float32 embedding 生成）
@@ -61,6 +56,13 @@
 ---
 
 ## 完了
+
+### pyannote-audio 話者分離（feat/diarizer） — 2026-03-14
+
+- [x] `src/diarizer.py`（pyannote-audio 4.x ラッパー、Protocol パターン、CPU 専用）
+- [x] `DiarizationSegment` / `DiarizationResult` クラス（`model_name` フィールド付き）
+- [x] `tests/test_diarizer.py`（12 テスト、モック使用）
+- [x] `src/config.py`: `HF_TOKEN` / `DIARIZE_MODEL` 環境変数追加
 
 ### faster-whisper 文字起こし（feat/transcriber） — 2026-03-14
 
