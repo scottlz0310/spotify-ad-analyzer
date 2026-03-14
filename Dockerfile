@@ -12,12 +12,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync --frozen --all-groups --no-install-project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --all-groups --no-install-project
 
 # ── runtime stage ─────────────────────────────────────────────────────────────
 FROM python:3.12-slim
 
 WORKDIR /app
+
+# ffmpeg is required by torchcodec (used by pyannote.audio for audio decoding).
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy only the pre-built virtual environment from the builder
 COPY --from=builder /app/.venv /app/.venv

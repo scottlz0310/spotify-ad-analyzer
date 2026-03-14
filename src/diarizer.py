@@ -19,17 +19,23 @@ class _SegmentProtocol(Protocol):
 
 
 class _AnnotationProtocol(Protocol):
-    """Minimal structural type for the diarization annotation result."""
+    """Minimal structural type for a pyannote.core.Annotation object."""
 
     def itertracks(
         self, *, yield_label: bool = False
     ) -> Iterable[tuple[_SegmentProtocol, str, str]]: ...
 
 
+class _DiarizeOutputProtocol(Protocol):
+    """Minimal structural type for the DiarizeOutput returned by pyannote.audio 4.x."""
+
+    speaker_diarization: _AnnotationProtocol
+
+
 class _PipelineProtocol(Protocol):
     """Minimal structural type for the pyannote Pipeline callable."""
 
-    def __call__(self, file: str) -> _AnnotationProtocol: ...
+    def __call__(self, file: str) -> _DiarizeOutputProtocol: ...
 
 
 class DiarizationSegment:
@@ -116,7 +122,7 @@ def diarize(
     if pipeline is None:
         pipeline = _load_pipeline(model_name, config.HF_TOKEN)
 
-    annotation = pipeline(str(audio_path))
+    output = pipeline(str(audio_path))
 
     segments: list[DiarizationSegment] = [
         DiarizationSegment(
@@ -124,7 +130,7 @@ def diarize(
             start_sec=turn.start,
             end_sec=turn.end,
         )
-        for turn, _, label in annotation.itertracks(yield_label=True)
+        for turn, _, label in output.speaker_diarization.itertracks(yield_label=True)
     ]
 
     return DiarizationResult(segments=segments, model_name=model_name)

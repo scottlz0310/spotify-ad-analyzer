@@ -1,12 +1,34 @@
 from __future__ import annotations
 
 import importlib
+import importlib.metadata
+import sys
+import types
 from typing import TYPE_CHECKING, Protocol, cast, override
 
 import numpy as np
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+def _ensure_pkg_resources() -> None:
+    """Shim pkg_resources for webrtcvad (resemblyzer dep).
+
+    webrtcvad uses ``pkg_resources.get_distribution`` which was removed from
+    *setuptools* in v81+.  When not present we install a minimal stub backed by
+    :mod:`importlib.metadata` so that ``import webrtcvad`` succeeds.
+    """
+    if "pkg_resources" not in sys.modules:
+        try:
+            _ = importlib.import_module("pkg_resources")
+        except ModuleNotFoundError:
+            _shim = types.ModuleType("pkg_resources")
+            _shim.get_distribution = importlib.metadata.distribution  # pyright: ignore[reportAttributeAccessIssue]
+            sys.modules["pkg_resources"] = _shim
+
+
+_ensure_pkg_resources()
 
 _EMBEDDING_DIM: int = 256
 
