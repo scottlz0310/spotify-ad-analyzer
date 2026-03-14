@@ -73,18 +73,31 @@ def _assign_speakers(
     Each transcript segment is assigned the speaker whose diarization interval
     has the greatest overlap with the segment.  Segments with no overlap
     receive an empty speaker label.
+
+    Both lists are assumed to be ordered by start time.  A two-pointer scan
+    skips diarization segments that end before each transcript segment starts,
+    reducing comparisons to O(N+M) in the typical ordered case.
     """
     result: list[db.SegmentInsert] = []
+    d_segs = diarization.segments
+    d_len = len(d_segs)
+    d_base = 0  # leftmost candidate index (segments before t_seg are skipped)
     for t_seg in transcript.segments:
+        # Advance past diarization segments that end before this segment starts.
+        while d_base < d_len and d_segs[d_base].end_sec <= t_seg.start_sec:
+            d_base += 1
+        # Scan candidates that can overlap with this transcript segment.
         speaker = ""
         best_overlap = 0.0
-        for d_seg in diarization.segments:
-            overlap = min(t_seg.end_sec, d_seg.end_sec) - max(
-                t_seg.start_sec, d_seg.start_sec
+        j = d_base
+        while j < d_len and d_segs[j].start_sec < t_seg.end_sec:
+            overlap = min(t_seg.end_sec, d_segs[j].end_sec) - max(
+                t_seg.start_sec, d_segs[j].start_sec
             )
             if overlap > best_overlap:
                 best_overlap = overlap
-                speaker = d_seg.speaker
+                speaker = d_segs[j].speaker
+            j += 1
         result.append(
             db.SegmentInsert(
                 speaker=speaker,
@@ -139,9 +152,10 @@ def run_pipeline(  # noqa: PLR0913
 
     Raises
     ------
-    Exception
-        Any exception from the pipeline stages is re-raised after setting
-        the ad status to ``'error'`` in the database.
+    RuntimeError
+        Wraps any exception from the pipeline stages.  The ad status is set
+        to ``'error'`` in the database before raising.  The original exception
+        is preserved in ``__cause__`` (``raise RuntimeError(...) from exc``).
     """
     if recorded_at is None:
         mtime = audio_path.stat().st_mtime
@@ -169,7 +183,6 @@ def run_pipeline(  # noqa: PLR0913
         embedding_result = _embed(audio_path)
         embedding_blob = embedding_to_blob(embedding_result.embedding)
 
-        speakers = diarization.speakers or [""]
         segments = _assign_speakers(transcript, diarization)
 
         with db.connect(db_path) as conn:
@@ -181,8 +194,11 @@ def run_pipeline(  # noqa: PLR0913
                 transcript.whisper_model,
             )
             db.insert_segments(conn, ad_id, segments)
-            for speaker in speakers:
-                db.upsert_voice_embedding(conn, ad_id, speaker, embedding_blob)
+            # Store a single whole-audio embedding (speaker="" key).
+            # The embedder operates on the full audio rather than per-speaker
+            # segments, so storing one record avoids misleadingly duplicating
+            # the same blob under each diarized speaker label.
+            db.upsert_voice_embedding(conn, ad_id, "", embedding_blob)
             db.update_ad_status(conn, ad_id, "done")
 
     except Exception as exc:
@@ -198,5 +214,5 @@ def run_pipeline(  # noqa: PLR0913
         ad_id=ad_id,
         transcript=transcript,
         diarization=diarization,
-        embeddings=dict.fromkeys(speakers, embedding_result),
+        embeddings={"": embedding_result},
     )

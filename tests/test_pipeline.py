@@ -212,7 +212,7 @@ def test_run_pipeline_persists_segments_with_speakers(tmp_path: Path) -> None:
     assert segments[1]["text"] == "B"
 
 
-def test_run_pipeline_persists_voice_embeddings_per_speaker(tmp_path: Path) -> None:
+def test_run_pipeline_persists_single_whole_audio_embedding(tmp_path: Path) -> None:
     db_path = _setup_db(tmp_path)
     audio = _setup_audio(tmp_path)
     diarization = _make_diarization(speakers=["SPEAKER_00", "SPEAKER_01"])
@@ -229,9 +229,11 @@ def test_run_pipeline_persists_voice_embeddings_per_speaker(tmp_path: Path) -> N
     with db.connect(db_path) as conn:
         embeddings = db.get_voice_embeddings(conn, result.ad_id)
 
-    speakers_stored = {e["speaker"] for e in embeddings}
-    assert speakers_stored == {"SPEAKER_00", "SPEAKER_01"}
-    assert result.embeddings.keys() == {"SPEAKER_00", "SPEAKER_01"}
+    # The embedder runs on the full audio once; a single record with speaker=""
+    # is stored regardless of how many speakers were diarized.
+    assert len(embeddings) == 1
+    assert embeddings[0]["speaker"] == ""
+    assert result.embeddings.keys() == {""}
 
 
 def test_run_pipeline_explicit_recorded_at(tmp_path: Path) -> None:
