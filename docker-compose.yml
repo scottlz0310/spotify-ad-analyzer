@@ -11,5 +11,5 @@ services:
       OLLAMA_HOST: ${OLLAMA_HOST:-host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
       HF_TOKEN: ${HF_TOKEN:-}
-      WATCHDOG_FORCE_POLLING: ${WATCHDOG_FORCE_POLLING:-1}
+      WATCHDOG_FORCE_POLLING: ${WATCHDOG_FORCE_POLLING:-0}
     restart: unless-stopped

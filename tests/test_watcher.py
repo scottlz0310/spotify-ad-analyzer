@@ -47,8 +47,8 @@ class TestIsAdFile:
 
 
 class TestAdFileHandler:
-    def _make_handler(self, tmp_path: Path) -> AdFileHandler:
-        return AdFileHandler(db_path=tmp_path / "ads.db")
+    def _make_handler(self, tmp_path: Path, *, polling: bool = False) -> AdFileHandler:
+        return AdFileHandler(db_path=tmp_path / "ads.db", polling=polling)
 
     def test_on_closed_calls_pipeline_for_ad_file(self, tmp_path: Path) -> None:
         handler = self._make_handler(tmp_path)
@@ -147,6 +147,37 @@ class TestAdFileHandler:
             mock_pipeline.side_effect = OSError("file gone")
             handler.on_closed(event)  # must not propagate
 
+    def test_on_created_ignored_in_inotify_mode(self, tmp_path: Path) -> None:
+        """on_created must be a no-op when polling=False (inotify Observer mode)."""
+        handler = self._make_handler(tmp_path, polling=False)
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            handler.on_created(event)
+
+        mock_pipeline.assert_not_called()
+
+    def test_on_created_triggers_pipeline_in_polling_mode(self, tmp_path: Path) -> None:
+        """on_created must trigger the pipeline when polling=True."""
+        handler = self._make_handler(tmp_path, polling=True)
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.return_value = MagicMock(ad_id=1)
+            handler.on_created(event)
+
+        mock_pipeline.assert_called_once()
+
+    def test_on_closed_ignored_in_polling_mode(self, tmp_path: Path) -> None:
+        """on_closed must be a no-op when polling=True (PollingObserver mode)."""
+        handler = self._make_handler(tmp_path, polling=True)
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            handler.on_closed(event)
+
+        mock_pipeline.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # start_watcher
@@ -155,7 +186,11 @@ class TestAdFileHandler:
 
 class TestStartWatcher:
     def test_returns_started_observer(self, tmp_path: Path) -> None:
-        with patch("src.watcher.Observer") as mock_cls:
+        with (
+            patch("src.watcher.Observer") as mock_cls,
+            patch("src.watcher.config") as mock_config,
+        ):
+            mock_config.WATCHDOG_FORCE_POLLING = False
             mock_obs = MagicMock()
             mock_cls.return_value = mock_obs
 
@@ -165,7 +200,11 @@ class TestStartWatcher:
         mock_obs.start.assert_called_once()
 
     def test_schedules_handler_on_watch_dir(self, tmp_path: Path) -> None:
-        with patch("src.watcher.Observer") as mock_cls:
+        with (
+            patch("src.watcher.Observer") as mock_cls,
+            patch("src.watcher.config") as mock_config,
+        ):
+            mock_config.WATCHDOG_FORCE_POLLING = False
             mock_obs = MagicMock()
             mock_cls.return_value = mock_obs
 
@@ -177,8 +216,14 @@ class TestStartWatcher:
 
     def test_creates_watch_dir_if_missing(self, tmp_path: Path) -> None:
         watch_dir = tmp_path / "new_shared"
-        with patch("src.watcher.Observer"):
+        with (
+            patch("src.watcher.Observer"),
+            patch("src.watcher.config") as mock_config,
+        ):
+            mock_config.WATCHDOG_FORCE_POLLING = False
             _ = start_watcher(watch_dir=watch_dir, db_path=tmp_path / "ads.db")
+
+        assert watch_dir.is_dir()
 
         assert watch_dir.is_dir()
 

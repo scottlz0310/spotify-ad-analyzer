@@ -47,22 +47,28 @@ class AdFileHandler(FileSystemEventHandler):
 
     ``on_closed`` is triggered by Linux inotify ``IN_CLOSE_WRITE``, meaning the
     file is fully written before the pipeline processes it.
+
+    When ``polling=True`` (PollingObserver mode), ``on_created`` is used instead
+    because PollingObserver does not fire ``on_closed``.
     """
 
-    def __init__(self, db_path: Path) -> None:
+    def __init__(self, db_path: Path, *, polling: bool = False) -> None:
         super().__init__()
         self._db_path: Path = db_path
+        self._polling: bool = polling
         self._seen: OrderedDict[str, None] = OrderedDict()
 
     @override
     def on_closed(self, event: FileSystemEvent) -> None:
         """Process a file once it is fully written (Linux inotify IN_CLOSE_WRITE)."""
-        self._handle(event)
+        if not self._polling:
+            self._handle(event)
 
     @override
     def on_created(self, event: FileSystemEvent) -> None:
-        """Process a file on creation (PollingObserver / non-inotify fallback)."""
-        self._handle(event)
+        """Process a file on creation (PollingObserver only)."""
+        if self._polling:
+            self._handle(event)
 
     def _handle(self, event: FileSystemEvent) -> None:
         """Shared handler for closed/created events."""
@@ -119,9 +125,10 @@ def start_watcher(
 
     watch_dir.mkdir(parents=True, exist_ok=True)
 
-    handler = AdFileHandler(db_path)
+    polling = config.WATCHDOG_FORCE_POLLING
+    handler = AdFileHandler(db_path, polling=polling)
     _obs: BaseObserver
-    if config.WATCHDOG_FORCE_POLLING:
+    if polling:
         _obs = PollingObserver()
         _logger.info("Using PollingObserver (WATCHDOG_FORCE_POLLING=1)")
     else:
