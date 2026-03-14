@@ -215,13 +215,13 @@ def test_embed_raises_on_2d_embedding() -> None:
 
 def test_ensure_pkg_resources_noop_when_already_present() -> None:
     """pkg_resources が sys.modules にある場合は何もしない。"""
-    sentinel = embedder._PkgResourcesShim("pkg_resources")  # noqa: SLF001
+    sentinel = embedder._PkgResourcesShim("pkg_resources")  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
     sys.modules["pkg_resources"] = sentinel
     try:
-        embedder._ensure_pkg_resources()  # noqa: SLF001
+        embedder._ensure_pkg_resources()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         assert sys.modules["pkg_resources"] is sentinel
     finally:
-        sys.modules.pop("pkg_resources", None)
+        _ = sys.modules.pop("pkg_resources", None)
 
 
 def test_ensure_pkg_resources_installs_shim_when_missing() -> None:
@@ -232,11 +232,11 @@ def test_ensure_pkg_resources_installs_shim_when_missing() -> None:
             "src.embedder.importlib.import_module",
             side_effect=ModuleNotFoundError("pkg_resources"),
         ):
-            embedder._ensure_pkg_resources()  # noqa: SLF001
+            embedder._ensure_pkg_resources()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         shim = sys.modules.get("pkg_resources")
-        assert isinstance(shim, embedder._PkgResourcesShim)  # noqa: SLF001
+        assert isinstance(shim, embedder._PkgResourcesShim)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         assert shim.get_distribution is _im.distribution
     finally:
-        sys.modules.pop("pkg_resources", None)
+        _ = sys.modules.pop("pkg_resources", None)
         if saved is not None:
             sys.modules["pkg_resources"] = saved
