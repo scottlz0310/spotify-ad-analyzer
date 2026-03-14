@@ -2,7 +2,8 @@
 
 All tests mock :class:`faster_whisper.WhisperModel` to avoid loading real
 model weights during CI.  The fixture ``sample.wav`` is a 0.5-second silent
-WAV used only to satisfy path-existence checks.
+WAV used to supply a realistic :class:`~pathlib.Path` argument to
+``transcribe()``.
 """
 
 from __future__ import annotations
