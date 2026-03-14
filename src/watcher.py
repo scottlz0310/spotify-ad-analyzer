@@ -7,12 +7,14 @@ from typing import TYPE_CHECKING, Protocol, cast, override
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 
 from src import config
 from src.pipeline import run_pipeline
 
 if TYPE_CHECKING:
     from watchdog.events import FileSystemEvent
+    from watchdog.observers.api import BaseObserver
 
 _logger = logging.getLogger(__name__)
 
@@ -23,6 +25,14 @@ _MAX_SEEN = 256
 class ObserverProtocol(Protocol):
     """Minimal interface required from a watchdog observer."""
 
+    def schedule(
+        self,
+        event_handler: FileSystemEventHandler,
+        path: str,
+        *,
+        recursive: bool = False,
+    ) -> object: ...
+    def start(self) -> None: ...
     def stop(self) -> None: ...
     def join(self, timeout: float | None = None) -> None: ...
 
@@ -37,16 +47,31 @@ class AdFileHandler(FileSystemEventHandler):
 
     ``on_closed`` is triggered by Linux inotify ``IN_CLOSE_WRITE``, meaning the
     file is fully written before the pipeline processes it.
+
+    When ``polling=True`` (PollingObserver mode), ``on_created`` is used instead
+    because PollingObserver does not fire ``on_closed``.
     """
 
-    def __init__(self, db_path: Path) -> None:
+    def __init__(self, db_path: Path, *, polling: bool = False) -> None:
         super().__init__()
         self._db_path: Path = db_path
+        self._polling: bool = polling
         self._seen: OrderedDict[str, None] = OrderedDict()
 
     @override
     def on_closed(self, event: FileSystemEvent) -> None:
         """Process a file once it is fully written (Linux inotify IN_CLOSE_WRITE)."""
+        if not self._polling:
+            self._handle(event)
+
+    @override
+    def on_created(self, event: FileSystemEvent) -> None:
+        """Process a file on creation (PollingObserver only)."""
+        if self._polling:
+            self._handle(event)
+
+    def _handle(self, event: FileSystemEvent) -> None:
+        """Shared handler for closed/created events."""
         if event.is_directory:
             return
         src_path = str(event.src_path)
@@ -100,9 +125,15 @@ def start_watcher(
 
     watch_dir.mkdir(parents=True, exist_ok=True)
 
-    handler = AdFileHandler(db_path)
-    observer = Observer()
-    _ = observer.schedule(handler, str(watch_dir), recursive=False)
-    observer.start()
+    polling = config.WATCHDOG_FORCE_POLLING
+    handler = AdFileHandler(db_path, polling=polling)
+    _obs: BaseObserver
+    if polling:
+        _obs = PollingObserver()
+        _logger.info("Using PollingObserver (WATCHDOG_FORCE_POLLING=1)")
+    else:
+        _obs = Observer()
+    _ = _obs.schedule(handler, str(watch_dir), recursive=False)
+    _obs.start()
     _logger.info("Watching %s for %s", watch_dir, _AD_GLOB)
-    return cast("ObserverProtocol", observer)
+    return cast("ObserverProtocol", _obs)

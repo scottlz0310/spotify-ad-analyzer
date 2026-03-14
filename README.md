@@ -34,15 +34,24 @@ cd spotify-ad-analyzer
 
 ### 環境変数
 
-プロジェクトルートに `.env` ファイルを作成し、以下を設定します。
+シェル環境変数を優先します。未設定の場合はプロジェクトルートの `.env` ファイルがフォールバックとして使われます（docker compose が自動で読み込みます）。
 
-```dotenv
-# 必須（未設定でもコンテナは起動するが、話者分離で認証エラーが発生してパイプラインが失敗します）
-HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx   # Hugging Face アクセストークン
+| 変数 | 必須 | デフォルト | 説明 |
+|------|:----:|-----------|------|
+| `HF_TOKEN` | ✅ | — | Hugging Face アクセストークン |
+| `WHISPER_MODEL` | | `small` | `tiny` / `base` / `small` / `medium` / `large-v3` |
+| `OLLAMA_HOST` | | `host.docker.internal:11434` | Ollama ホスト（Phase 3） |
+| `WATCHDOG_FORCE_POLLING` | | `0` | `1` で PollingObserver（Docker Desktop / Windows 環境で必要） |
 
-# 任意（デフォルト値を示す）
-WHISPER_MODEL=small                # tiny / base / small / medium / large-v3
-OLLAMA_HOST=host.docker.internal:11434  # Phase 3: Ollama ホスト
+```powershell
+# 方法A: シェル環境変数（推奨）
+$env:HF_TOKEN = "hf_xxxxxxxxxxxxxxxxxxxx"
+# Docker Desktop (Windows) の場合はポーリングモードを有効化
+$env:WATCHDOG_FORCE_POLLING = "1"
+docker compose up
+
+# 方法B: .env ファイル（フォールバック、gitignore 済み）
+# HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
 ```
 
 > `HF_TOKEN` の取得: [Hugging Face の設定ページ](https://huggingface.co/settings/tokens) でアクセストークンを生成し、  
