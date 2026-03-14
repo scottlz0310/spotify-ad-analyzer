@@ -4,12 +4,19 @@ import importlib
 import importlib.metadata
 import sys
 import types
-from typing import TYPE_CHECKING, Protocol, cast, override
+from typing import TYPE_CHECKING, Protocol, cast, final, override
 
 import numpy as np
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+@final
+class _PkgResourcesShim(types.ModuleType):
+    """Minimal pkg_resources shim backed by importlib.metadata."""
+
+    get_distribution = staticmethod(importlib.metadata.distribution)
 
 
 def _ensure_pkg_resources() -> None:
@@ -23,12 +30,8 @@ def _ensure_pkg_resources() -> None:
         try:
             _ = importlib.import_module("pkg_resources")
         except ModuleNotFoundError:
-            _shim = types.ModuleType("pkg_resources")
-            _shim.get_distribution = importlib.metadata.distribution  # pyright: ignore[reportAttributeAccessIssue]
-            sys.modules["pkg_resources"] = _shim
+            sys.modules["pkg_resources"] = _PkgResourcesShim("pkg_resources")
 
-
-_ensure_pkg_resources()
 
 _EMBEDDING_DIM: int = 256
 
@@ -81,12 +84,14 @@ def blob_to_embedding(blob: bytes) -> np.ndarray:
 
 def _load_encoder() -> _VoiceEncoderProtocol:
     """Instantiate a resemblyzer VoiceEncoder (lazy import to defer native deps)."""
+    _ensure_pkg_resources()
     mod = importlib.import_module("resemblyzer")
     return cast("_VoiceEncoderProtocol", mod.VoiceEncoder())
 
 
 def _load_preprocess_fn() -> _PreprocessFnProtocol:
     """Return resemblyzer's preprocess_wav callable (lazy import)."""
+    _ensure_pkg_resources()
     mod = importlib.import_module("resemblyzer")
     return cast("_PreprocessFnProtocol", mod.preprocess_wav)
 
