@@ -8,13 +8,11 @@ used to supply a realistic :class:`~pathlib.Path` argument to ``diarize()``.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-from src import diarizer
+import pytest
 
-if TYPE_CHECKING:
-    import pytest
+from src import diarizer
 
 # -- helpers --
 
@@ -137,3 +135,12 @@ def test_diarize_calls_pipeline_with_str_path() -> None:
     pl = _make_pipeline()
     _ = diarizer.diarize(SAMPLE_WAV, pipeline=pl)
     pl.assert_called_once_with(str(SAMPLE_WAV))
+
+
+def test_load_pipeline_raises_on_none_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("src.config.HF_TOKEN", "tok")
+    monkeypatch.setattr("src.config.DIARIZE_MODEL", "test-model")
+    with patch("src.diarizer.Pipeline") as mock_cls:
+        mock_cls.from_pretrained.return_value = None
+        with pytest.raises(RuntimeError, match="test-model"):
+            _ = diarizer.diarize(SAMPLE_WAV)
