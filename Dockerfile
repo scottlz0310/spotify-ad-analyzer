@@ -5,6 +5,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.10.10 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
+# Install build tools required for C-extension packages (e.g. webrtcvad)
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy dependency files first for Docker layer caching
 COPY pyproject.toml uv.lock ./
 
