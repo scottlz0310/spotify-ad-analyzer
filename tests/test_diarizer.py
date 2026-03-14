@@ -36,9 +36,11 @@ def _make_annotation(*items: tuple[float, float, str]) -> MagicMock:
 
 
 def _make_pipeline(*items: tuple[float, float, str]) -> MagicMock:
-    """Return a mock pipeline that returns a mock annotation when called."""
+    """Return a mock pipeline that returns a DiarizeOutput-like mock when called."""
     pipeline = MagicMock()
-    pipeline.return_value = _make_annotation(*items)
+    output = MagicMock()
+    output.speaker_diarization = _make_annotation(*items)
+    pipeline.return_value = output
     return pipeline
 
 

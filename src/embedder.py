@@ -1,12 +1,37 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, Protocol, cast, override
+import importlib.metadata
+import sys
+import types
+from typing import TYPE_CHECKING, Protocol, cast, final, override
 
 import numpy as np
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+@final
+class _PkgResourcesShim(types.ModuleType):
+    """Minimal pkg_resources shim backed by importlib.metadata."""
+
+    get_distribution = staticmethod(importlib.metadata.distribution)
+
+
+def _ensure_pkg_resources() -> None:
+    """Shim pkg_resources for webrtcvad (resemblyzer dep).
+
+    webrtcvad uses ``pkg_resources.get_distribution`` which was removed from
+    *setuptools* in v81+.  When not present we install a minimal stub backed by
+    :mod:`importlib.metadata` so that ``import webrtcvad`` succeeds.
+    """
+    if "pkg_resources" not in sys.modules:
+        try:
+            _ = importlib.import_module("pkg_resources")
+        except ModuleNotFoundError:
+            sys.modules["pkg_resources"] = _PkgResourcesShim("pkg_resources")
+
 
 _EMBEDDING_DIM: int = 256
 
@@ -59,12 +84,14 @@ def blob_to_embedding(blob: bytes) -> np.ndarray:
 
 def _load_encoder() -> _VoiceEncoderProtocol:
     """Instantiate a resemblyzer VoiceEncoder (lazy import to defer native deps)."""
+    _ensure_pkg_resources()
     mod = importlib.import_module("resemblyzer")
     return cast("_VoiceEncoderProtocol", mod.VoiceEncoder())
 
 
 def _load_preprocess_fn() -> _PreprocessFnProtocol:
     """Return resemblyzer's preprocess_wav callable (lazy import)."""
+    _ensure_pkg_resources()
     mod = importlib.import_module("resemblyzer")
     return cast("_PreprocessFnProtocol", mod.preprocess_wav)
 
