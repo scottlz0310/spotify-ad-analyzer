@@ -168,8 +168,13 @@ def run_pipeline(  # noqa: PLR0913
     recorded_at:
         ISO-8601 timestamp for when the ad was recorded.  Defaults to the
         file's last-modified time.
-    transcribe_fn / diarize_fn / embed_fn / analyze_fn:
-        Callable overrides for each pipeline stage (used in tests).
+    transcribe_fn / diarize_fn / embed_fn:
+        Callable overrides for ``(audio_path: Path) -> <result>`` (used in
+        tests).
+    analyze_fn:
+        Override for the LLM stage.  Signature: ``(transcript_text: str) ->
+        LlmAnalysisResult | None``.  Unlike the other DI parameters, the
+        input is the transcript *text* (``str``), not the audio path.
         Pass ``analyze_fn=lambda _: None`` to skip LLM analysis in tests.
 
     Returns

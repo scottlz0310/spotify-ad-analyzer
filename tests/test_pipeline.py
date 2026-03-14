@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
+import src.pipeline as pipeline_mod
 from src import db
 from src.diarizer import DiarizationResult, DiarizationSegment
 from src.embedder import EmbeddingResult
-from src.llm_analyzer import LlmAnalysisResult
+from src.llm_analyzer import LlmAnalysisResult, OllamaError
 from src.pipeline import PipelineResult, run_pipeline
 from src.transcriber import TranscriptResult, TranscriptSegment
 
@@ -500,3 +501,36 @@ def test_run_pipeline_result_contains_llm_analysis_field(tmp_path: Path) -> None
     assert result.llm_analysis is llm_result
     assert result.llm_analysis is not None  # narrow for type checker
     assert result.llm_analysis.summary == "Short spot."
+
+
+def test_run_pipeline_graceful_degradation_on_ollama_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = _setup_db(tmp_path)
+    audio = _setup_audio(tmp_path)
+
+    def _raise_ollama(_: str) -> LlmAnalysisResult:
+        msg = "connection refused: localhost:11434"
+        raise OllamaError(msg)
+
+    monkeypatch.setattr(pipeline_mod, "analyze_transcript", _raise_ollama)
+
+    result = run_pipeline(
+        audio,
+        db_path,
+        recorded_at="2026-01-01T00:00:00Z",
+        transcribe_fn=lambda _: _make_transcript(),
+        diarize_fn=lambda _: _make_diarization(),
+        embed_fn=lambda _: _make_embedding(),
+    )
+
+    assert result.llm_analysis is None
+
+    with db.connect(db_path) as conn:
+        ad = db.get_ad_by_filename(conn, audio.name)
+        assert ad is not None
+        assert ad["status"] == "done"
+        row = db.get_llm_analysis(conn, ad["id"])
+
+    assert row is None
