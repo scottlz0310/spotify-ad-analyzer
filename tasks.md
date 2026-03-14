@@ -13,12 +13,12 @@ _なし_
 
 ## 未着手
 
-### Phase 2 — コア解析パイプライン
+### Phase 1 — CI 整備
 
-- [ ] `feat/db-schema` — SQLite スキーマ + CRUD
-  - [ ] `src/db.py`（`ads` / `segments` / `transcripts` / `voice_embeddings` / `llm_analyses` テーブル定義）
-  - [ ] CRUD ヘルパー関数（型注釈必須）
-  - [ ] `tests/test_db.py`（インメモリ DB 使用）
+- [ ] `feat/ci` — GitHub Actions CI ワークフロー
+  - [ ] `.github/workflows/ci.yml`（push / PR on main で ruff・basedpyright・pytest）
+
+### Phase 2 — コア解析パイプライン
 
 - [ ] `feat/transcriber` — faster-whisper 文字起こし
   - [ ] `src/transcriber.py`（`WHISPER_MODEL` 環境変数対応）
@@ -71,6 +71,12 @@ _なし_
 ---
 
 ## 完了
+
+### SQLite スキーマ + CRUD（feat/db-schema） — 2026-03-14
+
+- [x] `src/db.py`（`ads` / `segments` / `transcripts` / `voice_embeddings` / `llm_analyses` テーブル定義）
+- [x] CRUD ヘルパー関数（TypedDict + AdStatus Literal、型注釈必須）
+- [x] `tests/test_db.py`（24 テスト、カバレッジ 95%、FK カスケード削除含む）
 
 ### リポジトリ初期整備（Initial commit） — 2026-03-13
 
