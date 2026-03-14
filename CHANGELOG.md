@@ -9,7 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- `src/llm_analyzer.py` — Ollama REST API クライアント（`analyze_transcript()`、`_parse_response()`、Markdown コードフェンス除去、JSON パース失敗時のフォールバック）
+- `src/pattern_analyzer.py` — SQL 集計 + CLI レポート（`hourly_frequency`・`ad_type_distribution`・`tone_distribution`・`detect_repeat_ads`、`PatternReport` 結果クラス、`python -m src.pattern_analyzer report` CLI）
+- `tests/test_pattern_analyzer.py` — 19 テスト（tmp_path SQLite、cosine 類似度テスト、CLI テスト含む）
+
+### Changed (from [Unreleased])
+- `src/llm_analyzer.py`— Ollama REST API クライアント（`analyze_transcript()`、`_parse_response()`、Markdown コードフェンス除去、JSON パース失敗時のフォールバック）
 - `LlmAnalysisResult` — `__slots__` + `@final` + `@override __repr__` 結果クラス（`product_name`・`ad_type`・`summary`・`tone`・`raw_response`）
 - `OllamaError(RuntimeError)` — Ollama 接続失敗・非 JSON レスポンス時の例外クラス
 - `tests/test_llm_analyzer.py` — 17 テスト（HTTP モック、コードフェンス除去、Invalid JSON フォールバック、非 dict JSON 型チェック、カバレッジ 100%）
