@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 dependencies = [
     "faster-whisper>=1.2.1",
+    "pyannote-audio>=3.1",
     "watchdog>=6.0.0",
 ]
 

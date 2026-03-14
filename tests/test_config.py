@@ -45,3 +45,16 @@ def test_ollama_host_has_port(reload_config: pytest.MonkeyPatch) -> None:
     _ = importlib.reload(config)
     assert isinstance(config.OLLAMA_HOST, str)
     assert ":" in config.OLLAMA_HOST
+
+
+def test_hf_token_is_str(reload_config: pytest.MonkeyPatch) -> None:
+    reload_config.setenv("HF_TOKEN", "hf_example_token")
+    _ = importlib.reload(config)
+    assert isinstance(config.HF_TOKEN, str)
+
+
+def test_diarize_model_nonempty(reload_config: pytest.MonkeyPatch) -> None:
+    reload_config.setenv("DIARIZE_MODEL", "pyannote/speaker-diarization-3.1")
+    _ = importlib.reload(config)
+    assert isinstance(config.DIARIZE_MODEL, str)
+    assert len(config.DIARIZE_MODEL) > 0

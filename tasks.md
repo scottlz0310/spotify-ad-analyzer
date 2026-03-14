@@ -7,7 +7,7 @@
 
 ## 進行中
 
-（なし）
+- `feat/diarizer` — pyannote-audio 話者分離
 
 ---
 
@@ -15,10 +15,10 @@
 
 ### Phase 2 — コア解析パイプライン
 
-- [ ] `feat/diarizer` — pyannote-audio 話者分離
-  - [ ] `src/diarizer.py`（pyannote-audio 3.x ラッパー）
-  - [ ] `SPEAKER_XX` ラベルと時間範囲を `TypedDict` で返す
-  - [ ] `tests/test_diarizer.py`（モック使用）
+- [ ] `feat/diarizer` — pyannote-audio 話者分離 ✅（PR #7 済み）
+  - [x] `src/diarizer.py`（pyannote-audio 4.x ラッパー、Protocol パターン）
+  - [x] `DiarizationSegment` / `DiarizationResult` クラス
+  - [x] `tests/test_diarizer.py`（11 テスト、モック使用）
 
 - [ ] `feat/embedder` — resemblyzer Voice Embedding
   - [ ] `src/embedder.py`（256-dim float32 embedding 生成）
