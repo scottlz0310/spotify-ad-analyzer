@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Protocol, override
 from src import db
 from src.diarizer import DiarizationResult, diarize
 from src.embedder import EmbeddingResult, embed, embedding_to_blob
+from src.llm_analyzer import LlmAnalysisResult, OllamaError, analyze_transcript
 from src.transcriber import TranscriptResult, transcribe
 
 if TYPE_CHECKING:
@@ -34,14 +35,27 @@ class _EmbedFnProtocol(Protocol):
     def __call__(self, audio_path: Path, /) -> EmbeddingResult: ...
 
 
+class _AnalyzeFnProtocol(Protocol):
+    """Callable protocol for the LLM analysis stage."""
+
+    def __call__(self, transcript: str, /) -> LlmAnalysisResult | None: ...
+
+
 class PipelineResult:
     """Result of running the full analysis pipeline on one audio file."""
 
-    __slots__: tuple[str, ...] = ("ad_id", "diarization", "embeddings", "transcript")
+    __slots__: tuple[str, ...] = (
+        "ad_id",
+        "diarization",
+        "embeddings",
+        "llm_analysis",
+        "transcript",
+    )
     ad_id: int
     transcript: TranscriptResult
     diarization: DiarizationResult
     embeddings: dict[str, EmbeddingResult]
+    llm_analysis: LlmAnalysisResult | None
 
     def __init__(
         self,
@@ -50,11 +64,13 @@ class PipelineResult:
         transcript: TranscriptResult,
         diarization: DiarizationResult,
         embeddings: dict[str, EmbeddingResult],
+        llm_analysis: LlmAnalysisResult | None = None,
     ) -> None:
         self.ad_id = ad_id
         self.transcript = transcript
         self.diarization = diarization
         self.embeddings = embeddings
+        self.llm_analysis = llm_analysis
 
     @override
     def __repr__(self) -> str:
@@ -121,6 +137,15 @@ def _default_embed(audio_path: Path, /) -> EmbeddingResult:
     return embed(audio_path)
 
 
+def _default_analyze(transcript: str, /) -> LlmAnalysisResult | None:
+    """Call Ollama; return None and warn if unreachable (graceful degradation)."""
+    try:
+        return analyze_transcript(transcript)
+    except OllamaError as exc:
+        _logger.warning("Ollama unavailable; LLM analysis skipped: %s", exc)
+        return None
+
+
 def run_pipeline(  # noqa: PLR0913
     audio_path: Path,
     db_path: Path,
@@ -129,6 +154,7 @@ def run_pipeline(  # noqa: PLR0913
     transcribe_fn: _TranscribeFnProtocol | None = None,
     diarize_fn: _DiarizeFnProtocol | None = None,
     embed_fn: _EmbedFnProtocol | None = None,
+    analyze_fn: _AnalyzeFnProtocol | None = None,
 ) -> PipelineResult:
     """Run the full analysis pipeline on *audio_path* and persist results.
 
@@ -143,12 +169,19 @@ def run_pipeline(  # noqa: PLR0913
         ISO-8601 timestamp for when the ad was recorded.  Defaults to the
         file's last-modified time.
     transcribe_fn / diarize_fn / embed_fn:
-        Callable overrides for each pipeline stage (used in tests).
+        Callable overrides for ``(audio_path: Path) -> <result>`` (used in
+        tests).
+    analyze_fn:
+        Override for the LLM stage.  Signature: ``(transcript_text: str) ->
+        LlmAnalysisResult | None``.  Unlike the other DI parameters, the
+        input is the transcript *text* (``str``), not the audio path.
+        Pass ``analyze_fn=lambda _: None`` to skip LLM analysis in tests.
 
     Returns
     -------
     PipelineResult
-        Contains the ad_id, transcript, diarization, and voice embeddings.
+        Contains the ad_id, transcript, diarization, voice embeddings, and
+        optional LLM analysis (``None`` when Ollama is unreachable).
 
     Raises
     ------
@@ -170,6 +203,9 @@ def run_pipeline(  # noqa: PLR0913
         diarize_fn if diarize_fn is not None else _default_diarize
     )
     _embed: _EmbedFnProtocol = embed_fn if embed_fn is not None else _default_embed
+    _analyze: _AnalyzeFnProtocol = (
+        analyze_fn if analyze_fn is not None else _default_analyze
+    )
 
     filename = audio_path.name
 
@@ -184,6 +220,7 @@ def run_pipeline(  # noqa: PLR0913
         embedding_blob = embedding_to_blob(embedding_result.embedding)
 
         segments = _assign_speakers(transcript, diarization)
+        llm_analysis = _analyze(transcript.full_text)
 
         with db.connect(db_path) as conn:
             db.upsert_transcript(
@@ -199,6 +236,16 @@ def run_pipeline(  # noqa: PLR0913
             # segments, so storing one record avoids misleadingly duplicating
             # the same blob under each diarized speaker label.
             db.upsert_voice_embedding(conn, ad_id, "", embedding_blob)
+            if llm_analysis is not None:
+                db.upsert_llm_analysis(
+                    conn,
+                    ad_id,
+                    raw_response=llm_analysis.raw_response,
+                    product_name=llm_analysis.product_name,
+                    ad_type=llm_analysis.ad_type,
+                    summary=llm_analysis.summary,
+                    tone=llm_analysis.tone,
+                )
             db.update_ad_status(conn, ad_id, "done")
 
     except Exception as exc:
@@ -215,4 +262,5 @@ def run_pipeline(  # noqa: PLR0913
         transcript=transcript,
         diarization=diarization,
         embeddings={"": embedding_result},
+        llm_analysis=llm_analysis,
     )
