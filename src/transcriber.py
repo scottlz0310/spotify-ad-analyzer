@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING, Protocol, cast, override
 
 from faster_whisper import WhisperModel
 
@@ -11,6 +11,14 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from faster_whisper.transcribe import Segment, TranscriptionInfo
+
+
+class _WhisperModelProtocol(Protocol):
+    """Minimal structural type for the WhisperModel subset used by transcribe()."""
+
+    def transcribe(
+        self, audio: str, *, beam_size: int = ...
+    ) -> tuple[Iterable[Segment], TranscriptionInfo]: ...
 
 
 class TranscriptSegment:
@@ -68,7 +76,10 @@ def _load_model(model_size: str) -> WhisperModel:
 
 
 def transcribe(
-    audio_path: Path, *, model: WhisperModel | None = None
+    audio_path: Path,
+    *,
+    model: WhisperModel | None = None,
+    whisper_model: str | None = None,
 ) -> TranscriptResult:
     """Transcribe *audio_path* and return a :class:`TranscriptResult`.
 
@@ -78,16 +89,20 @@ def transcribe(
         Path to the WAV (or any audio) file to transcribe.
     model:
         Pre-loaded :class:`WhisperModel` instance.  When *None* (default),
-        a new model is loaded using :data:`src.config.WHISPER_MODEL`.
+        a new model is loaded using *whisper_model*.
+    whisper_model:
+        Model size string (e.g. ``"small"``).  Defaults to
+        :data:`src.config.WHISPER_MODEL` when *None*.
     """
+    if whisper_model is None:
+        whisper_model = config.WHISPER_MODEL
     if model is None:
-        model = _load_model(config.WHISPER_MODEL)
+        model = _load_model(whisper_model)
 
+    typed_model = cast("_WhisperModelProtocol", model)
     segments_iter: Iterable[Segment]
     info: TranscriptionInfo
-    segments_iter, info = model.transcribe(  # pyright: ignore[reportUnknownMemberType]
-        str(audio_path), beam_size=5
-    )
+    segments_iter, info = typed_model.transcribe(str(audio_path), beam_size=5)
 
     segments: list[TranscriptSegment] = [
         TranscriptSegment(
@@ -101,5 +116,5 @@ def transcribe(
     return TranscriptResult(
         segments=segments,
         language=info.language,
-        whisper_model=config.WHISPER_MODEL,
+        whisper_model=whisper_model,
     )

@@ -144,3 +144,9 @@ def test_transcribe_loads_model_when_none(monkeypatch: pytest.MonkeyPatch) -> No
         monkeypatch.setattr("src.config.WHISPER_MODEL", "base")
         _ = transcriber.transcribe(SAMPLE_WAV)
         mock_load.assert_called_once_with("base")
+
+
+def test_transcribe_explicit_whisper_model() -> None:
+    model = _make_model(_make_segment(" x ", 0.0, 0.5))
+    result = transcriber.transcribe(SAMPLE_WAV, model=model, whisper_model="large-v3")
+    assert result.whisper_model == "large-v3"
