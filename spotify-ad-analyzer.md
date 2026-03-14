@@ -225,7 +225,7 @@ services:
 
 > **注意**: `HF_TOKEN` が未設定（または空）でもコンテナは起動しますが、
 > 話者分離ステップ（`diarize()`）で認証エラーが発生し、パイプラインが失敗します。
-> `.env` ファイルへの設定を推奨します。
+> シェル環境変数を優先します。未設定の場合は `.env` ファイル（gitignore 済み）がフォールバックとして使われます。
 
 `Dockerfile` は `python:3.12-slim` ベース。  
 `ghcr.io/astral-sh/uv` から `uv` バイナリを COPY して `uv sync --frozen` でインストール。

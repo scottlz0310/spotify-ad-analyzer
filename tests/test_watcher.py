@@ -189,6 +189,7 @@ class TestStartWatcher:
         ):
             mock_config.SHARED_DIR = tmp_path / "shared"
             mock_config.DATA_DIR = tmp_path / "data"
+            mock_config.WATCHDOG_FORCE_POLLING = False
             mock_obs = MagicMock()
             mock_cls.return_value = mock_obs
 
@@ -196,3 +197,18 @@ class TestStartWatcher:
 
         mock_obs.start.assert_called_once()
         assert (tmp_path / "shared").is_dir()
+
+    def test_polling_observer_when_force_polling(self, tmp_path: Path) -> None:
+        with (
+            patch("src.watcher.PollingObserver") as mock_cls,
+            patch("src.watcher.config") as mock_config,
+        ):
+            mock_config.SHARED_DIR = tmp_path / "shared"
+            mock_config.DATA_DIR = tmp_path / "data"
+            mock_config.WATCHDOG_FORCE_POLLING = True
+            mock_obs = MagicMock()
+            mock_cls.return_value = mock_obs
+
+            _ = start_watcher()
+
+        mock_obs.start.assert_called_once()
