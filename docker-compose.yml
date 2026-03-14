@@ -9,4 +9,5 @@ services:
       DATA_DIR: /app/data
       WHISPER_MODEL: ${WHISPER_MODEL:-small}
       OLLAMA_HOST: ${OLLAMA_HOST:-host.docker.internal:11434}
+      HF_TOKEN: ${HF_TOKEN:-}
     restart: unless-stopped
