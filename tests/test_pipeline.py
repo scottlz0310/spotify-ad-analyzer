@@ -8,6 +8,7 @@ import pytest
 from src import db
 from src.diarizer import DiarizationResult, DiarizationSegment
 from src.embedder import EmbeddingResult
+from src.llm_analyzer import LlmAnalysisResult
 from src.pipeline import PipelineResult, run_pipeline
 from src.transcriber import TranscriptResult, TranscriptSegment
 
@@ -131,6 +132,7 @@ def test_run_pipeline_returns_pipeline_result(tmp_path: Path) -> None:
         transcribe_fn=lambda _: transcript,
         diarize_fn=lambda _: diarization,
         embed_fn=lambda _: embedding,
+        analyze_fn=lambda _: None,
     )
 
     assert isinstance(result, PipelineResult)
@@ -150,6 +152,7 @@ def test_run_pipeline_persists_ad_as_done(tmp_path: Path) -> None:
         transcribe_fn=lambda _: _make_transcript(),
         diarize_fn=lambda _: _make_diarization(),
         embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
     )
 
     with db.connect(db_path) as conn:
@@ -172,6 +175,7 @@ def test_run_pipeline_persists_transcript(tmp_path: Path) -> None:
         transcribe_fn=lambda _: transcript,
         diarize_fn=lambda _: _make_diarization(),
         embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
     )
 
     with db.connect(db_path) as conn:
@@ -200,6 +204,7 @@ def test_run_pipeline_persists_segments_with_speakers(tmp_path: Path) -> None:
         transcribe_fn=lambda _: transcript,
         diarize_fn=lambda _: diarization,
         embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
     )
 
     with db.connect(db_path) as conn:
@@ -224,6 +229,7 @@ def test_run_pipeline_persists_single_whole_audio_embedding(tmp_path: Path) -> N
         transcribe_fn=lambda _: _make_transcript(),
         diarize_fn=lambda _: diarization,
         embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
     )
 
     with db.connect(db_path) as conn:
@@ -247,6 +253,7 @@ def test_run_pipeline_explicit_recorded_at(tmp_path: Path) -> None:
         transcribe_fn=lambda _: _make_transcript(),
         diarize_fn=lambda _: _make_diarization(),
         embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
     )
 
     with db.connect(db_path) as conn:
@@ -266,6 +273,7 @@ def test_run_pipeline_default_recorded_at_from_stat(tmp_path: Path) -> None:
         transcribe_fn=lambda _: _make_transcript(),
         diarize_fn=lambda _: _make_diarization(),
         embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
     )
 
     with db.connect(db_path) as conn:
@@ -291,6 +299,7 @@ def test_run_pipeline_empty_diarization_uses_empty_speaker(tmp_path: Path) -> No
         transcribe_fn=lambda _: _make_transcript(),
         diarize_fn=lambda _: empty_diarization,
         embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
     )
 
     with db.connect(db_path) as conn:
@@ -314,6 +323,7 @@ def test_run_pipeline_empty_transcript_no_segments(tmp_path: Path) -> None:
         transcribe_fn=lambda _: empty_transcript,
         diarize_fn=lambda _: _make_diarization(),
         embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
     )
 
     with db.connect(db_path) as conn:
@@ -343,6 +353,7 @@ def test_run_pipeline_sets_error_status_on_failure(tmp_path: Path) -> None:
             transcribe_fn=_bad_transcribe,
             diarize_fn=lambda _: _make_diarization(),
             embed_fn=lambda _: _make_embedding(),
+            analyze_fn=lambda _: None,
         )
 
     with db.connect(db_path) as conn:
@@ -370,6 +381,7 @@ def test_run_pipeline_reraises_as_runtime_error(tmp_path: Path) -> None:
             transcribe_fn=lambda _: _make_transcript(),
             diarize_fn=lambda _: _make_diarization(),
             embed_fn=_bad_embed,
+            analyze_fn=lambda _: None,
         )
 
 
@@ -389,7 +401,102 @@ def test_run_pipeline_error_preserves_original_cause(tmp_path: Path) -> None:
             transcribe_fn=lambda _: _make_transcript(),
             diarize_fn=_bad_diarize,
             embed_fn=lambda _: _make_embedding(),
+            analyze_fn=lambda _: None,
         )
 
     assert exc_info.value.__cause__ is not None
     assert "hf token missing" in str(exc_info.value.__cause__)
+
+
+# ---------------------------------------------------------------------------
+# LLM integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_run_pipeline_persists_llm_analysis(tmp_path: Path) -> None:
+    db_path = _setup_db(tmp_path)
+    audio = _setup_audio(tmp_path)
+
+    llm_result = LlmAnalysisResult(
+        product_name="TestCo",
+        ad_type="brand",
+        summary="A brand ad for TestCo.",
+        tone="friendly",
+        raw_response='{"product_name":"TestCo"}',
+    )
+
+    result = run_pipeline(
+        audio,
+        db_path,
+        recorded_at="2026-01-01T00:00:00Z",
+        transcribe_fn=lambda _: _make_transcript(),
+        diarize_fn=lambda _: _make_diarization(),
+        embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: llm_result,
+    )
+
+    assert result.llm_analysis == llm_result
+
+    with db.connect(db_path) as conn:
+        ad = db.get_ad_by_filename(conn, audio.name)
+        assert ad is not None
+        row = db.get_llm_analysis(conn, ad["id"])
+
+    assert row is not None
+    assert row["product_name"] == "TestCo"
+    assert row["ad_type"] == "brand"
+    assert row["summary"] == "A brand ad for TestCo."
+    assert row["tone"] == "friendly"
+
+
+def test_run_pipeline_skips_llm_persistence_when_fn_returns_none(
+    tmp_path: Path,
+) -> None:
+    db_path = _setup_db(tmp_path)
+    audio = _setup_audio(tmp_path)
+
+    result = run_pipeline(
+        audio,
+        db_path,
+        recorded_at="2026-01-01T00:00:00Z",
+        transcribe_fn=lambda _: _make_transcript(),
+        diarize_fn=lambda _: _make_diarization(),
+        embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: None,
+    )
+
+    assert result.llm_analysis is None
+
+    with db.connect(db_path) as conn:
+        ad = db.get_ad_by_filename(conn, audio.name)
+        assert ad is not None
+        row = db.get_llm_analysis(conn, ad["id"])
+
+    assert row is None
+
+
+def test_run_pipeline_result_contains_llm_analysis_field(tmp_path: Path) -> None:
+    db_path = _setup_db(tmp_path)
+    audio = _setup_audio(tmp_path)
+
+    llm_result = LlmAnalysisResult(
+        product_name=None,
+        ad_type=None,
+        summary="Short spot.",
+        tone=None,
+        raw_response="{}",
+    )
+
+    result = run_pipeline(
+        audio,
+        db_path,
+        recorded_at="2026-01-01T00:00:00Z",
+        transcribe_fn=lambda _: _make_transcript(),
+        diarize_fn=lambda _: _make_diarization(),
+        embed_fn=lambda _: _make_embedding(),
+        analyze_fn=lambda _: llm_result,
+    )
+
+    assert hasattr(result, "llm_analysis")
+    assert isinstance(result.llm_analysis, LlmAnalysisResult)
+    assert result.llm_analysis.summary == "Short spot."
