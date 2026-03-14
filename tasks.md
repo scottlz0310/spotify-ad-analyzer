@@ -15,11 +15,6 @@
 
 ### Phase 2 — コア解析パイプライン
 
-- [ ] `feat/embedder` — resemblyzer Voice Embedding
-  - [ ] `src/embedder.py`（256-dim float32 embedding 生成）
-  - [ ] numpy array を SQLite BLOB へシリアライズ / デシリアライズ
-  - [ ] `tests/test_embedder.py`
-
 - [ ] `feat/pipeline` — パイプライン統合
   - [ ] `src/pipeline.py`（transcriber → diarizer → embedder → db 保存）
   - [ ] エラー時の `status = 'error'` 更新と例外ログ
@@ -56,6 +51,13 @@
 ---
 
 ## 完了
+
+### resemblyzer 声紋埋め込み（feat/embedder） — 2026-03-14
+
+- [x] `src/embedder.py`（256-dim float32 embedding 生成、256-dim バリデーション付き）
+- [x] numpy array を SQLite BLOB へシリアライズ / デシリアライズ
+- [x] `tests/test_embedder.py`（17 テスト、resemblyzer モック、カバレッジ 100%）
+- [x] `pyproject.toml`: `numpy>=1.26` 追加、`setuptools` 削除、v0.4.0
 
 ### pyannote-audio 話者分離（feat/diarizer） — 2026-03-14
 
