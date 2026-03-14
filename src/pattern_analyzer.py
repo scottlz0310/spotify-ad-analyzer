@@ -119,8 +119,7 @@ def hourly_frequency(conn: sqlite3.Connection) -> list[HourlyFrequencyRow]:
     """
     rows = conn.execute(sql).fetchall()
     return [
-        HourlyFrequencyRow(hour=int(r["hour"]), count=int(r["count"]))
-        for r in rows
+        HourlyFrequencyRow(hour=int(r["hour"]), count=int(r["count"])) for r in rows
     ]
 
 
