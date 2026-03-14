@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `src/pipeline.py` — 解析パイプライン統合（transcriber → diarizer → embedder → db 保存、DI 対応、エラー時 `status='error'` 設定）
+- `tests/test_pipeline.py` — 14 テスト（全モジュールをモック、カバレッジ 97%）
+
 ---
 
 ## [0.4.0] — 2026-03-14

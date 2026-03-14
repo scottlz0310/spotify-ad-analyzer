@@ -7,7 +7,12 @@
 
 ## 進行中
 
-*（現在進行中のタスクはありません）*
+### Phase 2 — コア解析パイプライン
+
+- [x] `feat/pipeline` — パイプライン統合
+  - [x] `src/pipeline.py`（transcriber → diarizer → embedder → db 保存）
+  - [x] エラー時の `status = 'error'` 更新と例外ログ
+  - [x] `tests/test_pipeline.py`（各モジュールをモック）
 
 ---
 
