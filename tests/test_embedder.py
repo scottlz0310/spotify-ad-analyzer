@@ -8,6 +8,7 @@ mean most tests never touch resemblyzer at all.
 
 from __future__ import annotations
 
+import importlib.metadata as _im
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -207,3 +208,35 @@ def test_embed_raises_on_2d_embedding() -> None:
         _ = embedder.embed(
             SAMPLE_WAV, encoder=bad_encoder, preprocess_fn=_make_preprocess()
         )
+
+
+# -- _ensure_pkg_resources / _PkgResourcesShim --
+
+
+def test_ensure_pkg_resources_noop_when_already_present() -> None:
+    """pkg_resources が sys.modules にある場合は何もしない。"""
+    sentinel = embedder._PkgResourcesShim("pkg_resources")  # noqa: SLF001
+    sys.modules["pkg_resources"] = sentinel
+    try:
+        embedder._ensure_pkg_resources()  # noqa: SLF001
+        assert sys.modules["pkg_resources"] is sentinel
+    finally:
+        sys.modules.pop("pkg_resources", None)
+
+
+def test_ensure_pkg_resources_installs_shim_when_missing() -> None:
+    """pkg_resources が import できないときシムを sys.modules に挿入する。"""
+    saved = sys.modules.pop("pkg_resources", None)
+    try:
+        with patch(
+            "src.embedder.importlib.import_module",
+            side_effect=ModuleNotFoundError("pkg_resources"),
+        ):
+            embedder._ensure_pkg_resources()  # noqa: SLF001
+        shim = sys.modules.get("pkg_resources")
+        assert isinstance(shim, embedder._PkgResourcesShim)  # noqa: SLF001
+        assert shim.get_distribution is _im.distribution
+    finally:
+        sys.modules.pop("pkg_resources", None)
+        if saved is not None:
+            sys.modules["pkg_resources"] = saved
