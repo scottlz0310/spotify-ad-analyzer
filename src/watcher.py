@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, override
+from typing import TYPE_CHECKING, Protocol, cast, override
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 _logger = logging.getLogger(__name__)
 
 _AD_GLOB = "spotify_ad_*.wav"
+_MAX_SEEN = 256
 
 
 class ObserverProtocol(Protocol):
@@ -40,7 +42,7 @@ class AdFileHandler(FileSystemEventHandler):
     def __init__(self, db_path: Path) -> None:
         super().__init__()
         self._db_path: Path = db_path
-        self._seen: set[str] = set()
+        self._seen: OrderedDict[str, None] = OrderedDict()
 
     @override
     def on_closed(self, event: FileSystemEvent) -> None:
@@ -53,7 +55,11 @@ class AdFileHandler(FileSystemEventHandler):
         if src_path in self._seen:
             _logger.debug("Skipping already-processed file: %s", src_path)
             return
-        self._seen.add(src_path)
+        # Add before pipeline to prevent duplicate concurrent processing.
+        # Evict the oldest entry once the cap is exceeded.
+        self._seen[src_path] = None
+        if len(self._seen) > _MAX_SEEN:
+            _ = self._seen.popitem(last=False)
         audio_path = Path(src_path)
         _logger.info("New ad file detected: %s", audio_path.name)
         try:
@@ -61,7 +67,9 @@ class AdFileHandler(FileSystemEventHandler):
             _logger.info(
                 "Pipeline complete: ad_id=%d %s", result.ad_id, audio_path.name
             )
-        except RuntimeError:
+        except Exception:
+            # Remove from seen so the file can be retried on a subsequent event.
+            self._seen.pop(src_path, None)
             _logger.exception("Pipeline failed for %s", audio_path.name)
 
 
@@ -97,4 +105,4 @@ def start_watcher(
     _ = observer.schedule(handler, str(watch_dir), recursive=False)
     observer.start()
     _logger.info("Watching %s for %s", watch_dir, _AD_GLOB)
-    return observer  # type: ignore[return-value]
+    return cast("ObserverProtocol", observer)

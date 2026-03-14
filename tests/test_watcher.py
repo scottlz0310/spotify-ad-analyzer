@@ -23,19 +23,19 @@ def _make_closed_event(src_path: str) -> FileClosedEvent:
 
 class TestIsAdFile:
     def test_bare_matching_filename(self) -> None:
-        assert is_ad_file("spotify_ad_2026-01-01T00-00-00.wav")
+        assert is_ad_file("spotify_ad_2026-01-01_00-00-00.wav")
 
     def test_full_path_matching(self) -> None:
-        assert is_ad_file("/app/shared/spotify_ad_2026-01-01T00-00-00.wav")
+        assert is_ad_file("/app/shared/spotify_ad_2026-01-01_00-00-00.wav")
 
     def test_non_matching_filename(self) -> None:
         assert not is_ad_file("music_track.wav")
 
     def test_wrong_prefix(self) -> None:
-        assert not is_ad_file("ad_2026-01-01T00-00-00.wav")
+        assert not is_ad_file("ad_2026-01-01_00-00-00.wav")
 
     def test_wrong_extension(self) -> None:
-        assert not is_ad_file("spotify_ad_2026-01-01T00-00-00.mp3")
+        assert not is_ad_file("spotify_ad_2026-01-01_00-00-00.mp3")
 
     def test_accepts_path_object(self) -> None:
         assert is_ad_file(Path("/shared/spotify_ad_test.wav"))
@@ -52,7 +52,7 @@ class TestAdFileHandler:
 
     def test_on_closed_calls_pipeline_for_ad_file(self, tmp_path: Path) -> None:
         handler = self._make_handler(tmp_path)
-        event = _make_closed_event("/shared/spotify_ad_2026-01-01.wav")
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
 
         with patch("src.watcher.run_pipeline") as mock_pipeline:
             mock_pipeline.return_value = MagicMock(ad_id=1)
@@ -63,7 +63,7 @@ class TestAdFileHandler:
     def test_on_closed_passes_correct_args(self, tmp_path: Path) -> None:
         db_path = tmp_path / "ads.db"
         handler = AdFileHandler(db_path=db_path)
-        audio = "/shared/spotify_ad_2026-01-01.wav"
+        audio = "/shared/spotify_ad_2026-01-01_00-00-00.wav"
         event = _make_closed_event(audio)
 
         with patch("src.watcher.run_pipeline") as mock_pipeline:
@@ -85,7 +85,7 @@ class TestAdFileHandler:
         handler = self._make_handler(tmp_path)
         event = MagicMock()
         event.is_directory = True
-        event.src_path = "/shared/spotify_ad_2026-01-01.wav"
+        event.src_path = "/shared/spotify_ad_2026-01-01_00-00-00.wav"
 
         with patch("src.watcher.run_pipeline") as mock_pipeline:
             handler.on_closed(event)
@@ -94,7 +94,7 @@ class TestAdFileHandler:
 
     def test_on_closed_deduplicates_same_path(self, tmp_path: Path) -> None:
         handler = self._make_handler(tmp_path)
-        event = _make_closed_event("/shared/spotify_ad_2026-01-01.wav")
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
 
         with patch("src.watcher.run_pipeline") as mock_pipeline:
             mock_pipeline.return_value = MagicMock(ad_id=1)
@@ -119,10 +119,32 @@ class TestAdFileHandler:
 
     def test_on_closed_pipeline_error_does_not_raise(self, tmp_path: Path) -> None:
         handler = self._make_handler(tmp_path)
-        event = _make_closed_event("/shared/spotify_ad_2026-01-01.wav")
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
 
         with patch("src.watcher.run_pipeline") as mock_pipeline:
             mock_pipeline.side_effect = RuntimeError("pipeline failed")
+            handler.on_closed(event)  # must not propagate
+
+    def test_on_closed_pipeline_error_allows_retry(self, tmp_path: Path) -> None:
+        """After pipeline failure the file is removed from _seen — retry is possible."""
+        handler = self._make_handler(tmp_path)
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.side_effect = RuntimeError("transient error")
+            handler.on_closed(event)
+
+        # Access via the public name to satisfy the linter
+        seen: dict[str, None] = handler._seen  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        assert str(event.src_path) not in seen
+
+    def test_on_closed_non_runtime_error_does_not_raise(self, tmp_path: Path) -> None:
+        """Non-RuntimeError exceptions (e.g. OSError) must also be caught."""
+        handler = self._make_handler(tmp_path)
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.side_effect = OSError("file gone")
             handler.on_closed(event)  # must not propagate
 
 
