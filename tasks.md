@@ -9,26 +9,16 @@
 
 ### Phase 2 — コア解析パイプライン
 
-- [x] `feat/pipeline` — パイプライン統合
-  - [x] `src/pipeline.py`（transcriber → diarizer → embedder → db 保存）
-  - [x] エラー時の `status = 'error'` 更新と例外ログ
-  - [x] `tests/test_pipeline.py`（各モジュールをモック）
+- [x] `feat/watcher-entrypoint` — ファイル監視 + エントリポイント
+  - [x] `src/watcher.py`（watchdog で `shared/` 監視、`spotify_ad_*.wav` を pipeline へ）
+  - [x] `src/main.py`（watcher 起動・SIGINT/SIGTERM graceful shutdown）
+  - [x] `tests/test_watcher.py` / `tests/test_main.py`
 
 ---
 
 ## 未着手
 
 ### Phase 2 — コア解析パイプライン
-
-- [ ] `feat/pipeline` — パイプライン統合
-  - [ ] `src/pipeline.py`（transcriber → diarizer → embedder → db 保存）
-  - [ ] エラー時の `status = 'error'` 更新と例外ログ
-  - [ ] `tests/test_pipeline.py`（各モジュールをモック）
-
-- [ ] `feat/watcher-entrypoint` — ファイル監視 + エントリポイント
-  - [ ] `src/watcher.py`（watchdog で `shared/` 監視、`spotify_ad_*.wav` を pipeline へ）
-  - [ ] `src/main.py`（watcher 起動・SIGINT/SIGTERM graceful shutdown）
-  - [ ] `tests/test_watcher.py`
 
 - [ ] `feat/docs` — ドキュメント整備
   - [ ] `README.md`（セットアップ・`docker compose up` 起動手順）
