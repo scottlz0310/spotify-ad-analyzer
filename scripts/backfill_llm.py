@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Backfill LLM analysis for ads that have transcripts but no llm_analyses row.
 
 Usage (inside the analyzer Docker container):
@@ -11,7 +10,9 @@ Or via docker compose:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
+import sqlite3
 import sys
 import time
 
@@ -30,10 +31,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Backfill LLM analysis for existing ads"
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--limit", type=int, default=0, help="Max ads to process (0=all)"
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be processed without calling LLM",
@@ -44,21 +45,19 @@ def main() -> None:
     db.init_db(db_path)
 
     with db.connect(db_path) as conn:
-        rows = conn.execute(
-            """
-            SELECT t.ad_id, t.full_text
+        base_where = """
             FROM transcripts t
             LEFT JOIN llm_analyses l ON t.ad_id = l.ad_id
             WHERE l.ad_id IS NULL
               AND t.full_text IS NOT NULL
               AND t.full_text != ''
-            ORDER BY t.ad_id
-            """
-        ).fetchall()
+        """
+        total: int = conn.execute(f"SELECT COUNT(*) {base_where}").fetchone()[0]
 
-        total = len(rows)
-        if args.limit:
-            rows = rows[: args.limit]
+        limit_clause = f"LIMIT {args.limit}" if args.limit else ""
+        rows = conn.execute(
+            f"SELECT t.ad_id, t.full_text {base_where} ORDER BY t.ad_id {limit_clause}"
+        ).fetchall()
 
         _logger.info(
             "Found %d ads without LLM analysis (processing %d, model=%s)",
@@ -99,8 +98,9 @@ def main() -> None:
                 _logger.exception("  ✗ OllamaError for ad_id=%d", ad_id)
                 errors += 1
                 time.sleep(2)
-            except Exception:
-                _logger.exception("  ✗ Unexpected error for ad_id=%d", ad_id)
+            except (sqlite3.Error, json.JSONDecodeError, ValueError):
+                _logger.exception("  ✗ Error for ad_id=%d", ad_id)
+                conn.rollback()
                 errors += 1
 
         _logger.info(
