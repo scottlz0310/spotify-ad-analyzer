@@ -19,7 +19,13 @@ _なし_
 
 ## 完了
 
-### パターン分析 CLI（feat/pattern-analyzer） — 2026-03-14
+### WAV 分割（feat/wav-splitter） — 2026-03-14
+
+- [x] `src/splitter.py`（無音区間検出・WAV 分割・`split_if_needed` オーケストレーター）
+- [x] `src/watcher.py` — `split_fn` DI 追加・`_handle()` マルチパート対応
+- [x] `tests/test_splitter.py`（21 テスト）・`tests/test_watcher.py`（5 テスト追加）
+
+### パターン分析 CLI（feat/pattern-analyzer）— 2026-03-14
 
 - [x] `src/pattern_analyzer.py`（時間帯別頻度・広告種別分布・トーン分布・cosine 類似度による繰り返し声紋検出）
 - [x] `PatternReport` 結果クラス（`to_dict()` → JSON 出力）

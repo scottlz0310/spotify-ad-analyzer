@@ -11,8 +11,11 @@ from watchdog.observers.polling import PollingObserver
 
 from src import config
 from src.pipeline import run_pipeline
+from src.splitter import split_if_needed
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
@@ -42,6 +45,16 @@ def is_ad_file(path: str | Path) -> bool:
     return Path(path).match(_AD_GLOB)
 
 
+class _SplitFnProtocol(Protocol):
+    """Callable protocol for the WAV splitting stage."""
+
+    def __call__(self, audio_path: Path, /) -> list[Path]: ...
+
+
+def _default_split(audio_path: Path, /) -> list[Path]:
+    return split_if_needed(audio_path)
+
+
 class AdFileHandler(FileSystemEventHandler):
     """Watchdog event handler that runs the analysis pipeline on new ad files.
 
@@ -50,12 +63,25 @@ class AdFileHandler(FileSystemEventHandler):
 
     When ``polling=True`` (PollingObserver mode), ``on_created`` is used instead
     because PollingObserver does not fire ``on_closed``.
+
+    If a recording contains two consecutive ads (e.g. two 30-second spots in a
+    single 60-second WAV), the handler detects the silent gap between them,
+    splits the file into individual parts, and processes each part separately.
     """
 
-    def __init__(self, db_path: Path, *, polling: bool = False) -> None:
+    def __init__(
+        self,
+        db_path: Path,
+        *,
+        polling: bool = False,
+        split_fn: _SplitFnProtocol | None = None,
+    ) -> None:
         super().__init__()
         self._db_path: Path = db_path
         self._polling: bool = polling
+        self._split_fn: Callable[[Path], list[Path]] = (
+            split_fn if split_fn is not None else _default_split
+        )
         self._seen: OrderedDict[str, None] = OrderedDict()
 
     @override
@@ -69,6 +95,33 @@ class AdFileHandler(FileSystemEventHandler):
         """Process a file on creation (PollingObserver only)."""
         if self._polling:
             self._handle(event)
+
+    def _get_parts(self, audio_path: Path, src_path: str) -> list[Path] | None:
+        """Invoke split_fn and normalise the result.
+
+        Returns a non-empty list of paths to process, or ``None`` if the split
+        failed (in which case *src_path* has already been removed from *_seen*
+        so the file can be retried on the next event).
+        """
+        try:
+            parts = self._split_fn(audio_path)
+        except Exception:
+            _logger.exception("Split failed for %s; skipping", audio_path.name)
+            self._seen.pop(src_path, None)
+            return None
+        if not parts:
+            _logger.warning(
+                "split_fn returned empty list for %s; falling back to original",
+                audio_path.name,
+            )
+            return [audio_path]
+        if len(parts) > 1:
+            _logger.info(
+                "Detected %d ads in %s - processing each part",
+                len(parts),
+                audio_path.name,
+            )
+        return parts
 
     def _handle(self, event: FileSystemEvent) -> None:
         """Shared handler for closed/created events."""
@@ -87,15 +140,29 @@ class AdFileHandler(FileSystemEventHandler):
             _ = self._seen.popitem(last=False)
         audio_path = Path(src_path)
         _logger.info("New ad file detected: %s", audio_path.name)
-        try:
-            result = run_pipeline(audio_path, self._db_path)
-            _logger.info(
-                "Pipeline complete: ad_id=%d %s", result.ad_id, audio_path.name
-            )
-        except Exception:
-            # Remove from seen so the file can be retried on a subsequent event.
+
+        parts = self._get_parts(audio_path, src_path)
+        if parts is None:
+            return
+
+        any_error = False
+        for part_path in parts:
+            try:
+                result = run_pipeline(part_path, self._db_path)
+                _logger.info(
+                    "Pipeline complete: ad_id=%d %s", result.ad_id, part_path.name
+                )
+            except Exception:
+                any_error = True
+                _logger.exception("Pipeline failed for %s", part_path.name)
+            finally:
+                # Remove temp split file; leave the original untouched.
+                if part_path != audio_path:
+                    part_path.unlink(missing_ok=True)
+
+        if any_error:
+            # Allow retry on a subsequent event.
             self._seen.pop(src_path, None)
-            _logger.exception("Pipeline failed for %s", audio_path.name)
 
 
 def start_watcher(
