@@ -17,7 +17,8 @@ Respond with ONLY a valid JSON object containing exactly these fields:
 - "product_name": name of the product or service advertised (string, or null)
 - "ad_type": one of "product", "service", "brand", "promotion", "event", "other" \
 (string, or null)
-- "summary": one to two sentences describing what the ad is about (string, or null)
+- "summary": one to two sentences in Japanese describing what the ad is about \
+(string, or null)
 - "tone": one of "energetic", "calm", "humorous", "serious", "inspirational", \
 "urgent", "other" (string, or null)
 
