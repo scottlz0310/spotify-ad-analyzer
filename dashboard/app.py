@@ -24,9 +24,8 @@ if not DB_PATH.exists():
     )
     st.stop()
 
-conn = get_conn()
-ads = get_ads(conn)
-conn.close()
+with get_conn() as conn:
+    ads = get_ads(conn)
 
 if not ads:
     st.warning(
@@ -53,12 +52,16 @@ st.subheader("最近の広告（直近 10 件）")
 
 import pandas as pd  # noqa: E402
 
+_PREVIEW_LEN = 60
+
 recent = ads[-10:][::-1]
 df = pd.DataFrame(recent)[
     ["id", "filename", "language", "speaker_count", "duration_sec", "full_text"]
 ]
 df.columns = ["ID", "ファイル名", "言語", "話者数", "尺(秒)", "書き起こし（抜粋）"]
-df["書き起こし（抜粋）"] = df["書き起こし（抜粋）"].fillna("").str[:60] + "…"
+df["書き起こし（抜粋）"] = df["書き起こし（抜粋）"].apply(
+    lambda t: (t[:_PREVIEW_LEN] + "…") if len(t) > _PREVIEW_LEN else t
+)
 df["尺(秒)"] = df["尺(秒)"].fillna(0).round(1)
 
 st.dataframe(df, use_container_width=True, hide_index=True)

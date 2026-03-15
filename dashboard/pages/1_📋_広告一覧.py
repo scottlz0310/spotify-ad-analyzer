@@ -7,12 +7,13 @@ import streamlit as st
 
 from db import get_ads, get_conn
 
-st.set_page_config(page_title="広告一覧", page_icon="📋", layout="wide")
+_PREVIEW_LEN = 80
+
+
 st.title("📋 広告一覧")
 
-conn = get_conn()
-ads = get_ads(conn)
-conn.close()
+with get_conn() as conn:
+    ads = get_ads(conn)
 
 if not ads:
     st.warning("データがありません。")
@@ -78,7 +79,9 @@ display.columns = [
     "尺(秒)",
     "書き起こし（抜粋）",
 ]
-display["書き起こし（抜粋）"] = display["書き起こし（抜粋）"].str[:80] + "…"
+display["書き起こし（抜粋）"] = display["書き起こし（抜粋）"].apply(
+    lambda t: (t[:_PREVIEW_LEN] + "…") if len(t) > _PREVIEW_LEN else t
+)
 
 selected = st.dataframe(
     display,

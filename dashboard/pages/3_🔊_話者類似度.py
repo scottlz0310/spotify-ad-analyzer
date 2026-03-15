@@ -21,10 +21,9 @@ def cosine(a: list[float], b: list[float]) -> float:
     return float(np.dot(va, vb) / denom) if denom > 0 else 0.0
 
 
-conn = get_conn()
-ads = get_ads(conn)
-embeddings = get_all_embeddings(conn)
-conn.close()
+with get_conn() as conn:
+    ads = get_ads(conn)
+    embeddings = get_all_embeddings(conn)
 
 if not ads or not embeddings:
     st.warning("データがありません。")

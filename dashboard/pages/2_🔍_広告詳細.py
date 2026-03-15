@@ -13,32 +13,30 @@ from db import get_ads, get_conn, get_llm, get_segments, get_transcript
 st.set_page_config(page_title="広告詳細", page_icon="🔍", layout="wide")
 st.title("🔍 広告詳細")
 
-conn = get_conn()
-ads = get_ads(conn)
+with get_conn() as conn:
+    ads = get_ads(conn)
 
-if not ads:
-    st.warning("データがありません。")
-    conn.close()
-    st.stop()
+    if not ads:
+        st.warning("データがありません。")
+        st.stop()
 
-# ── Ad selector ───────────────────────────────────────────────────────────────
-ad_options = {a["id"]: f"[{a['id']}] {a['filename']}" for a in ads}
-default_id = st.session_state.get("selected_ad_id", ads[0]["id"])
-if default_id not in ad_options:
-    default_id = ads[0]["id"]
+    # ── Ad selector ───────────────────────────────────────────────────────────────
+    ad_options = {a["id"]: f"[{a['id']}] {a['filename']}" for a in ads}
+    default_id = st.session_state.get("selected_ad_id", ads[0]["id"])
+    if default_id not in ad_options:
+        default_id = ads[0]["id"]
 
-ad_id = st.selectbox(
-    "広告を選択",
-    options=list(ad_options.keys()),
-    format_func=lambda x: ad_options[x],
-    index=list(ad_options.keys()).index(default_id),
-)
+    ad_id = st.selectbox(
+        "広告を選択",
+        options=list(ad_options.keys()),
+        format_func=lambda x: ad_options[x],
+        index=list(ad_options.keys()).index(default_id),
+    )
 
-ad_info = next((a for a in ads if a["id"] == ad_id), None)
-transcript = get_transcript(conn, ad_id)
-segments = get_segments(conn, ad_id)
-llm = get_llm(conn, ad_id)
-conn.close()
+    ad_info = next((a for a in ads if a["id"] == ad_id), None)
+    transcript = get_transcript(conn, ad_id)
+    segments = get_segments(conn, ad_id)
+    llm = get_llm(conn, ad_id)
 
 if not ad_info:
     st.error("広告が見つかりません。")
