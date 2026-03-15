@@ -219,7 +219,7 @@ class TestAnalyzeTranscript:
         req_data = captured[0].data
         assert isinstance(req_data, bytes)
         body = json.loads(req_data)
-        assert body["model"] == "llama3.2"
+        assert body["model"] == "qwen3.5"
 
 
 # ─── LlmAnalysisResult ───────────────────────────────────────────────────────

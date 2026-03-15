@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-import db as ddb
+import dashboard.db as ddb
 
 if TYPE_CHECKING:
     from pathlib import Path
