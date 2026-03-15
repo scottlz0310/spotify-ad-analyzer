@@ -101,8 +101,8 @@ shared/spotify_ad_*.wav  ← spotify-ad-recorder（Windows）が書き込む
         ├── diarizer.py      (pyannote-audio)  → 話者ラベル
         ├── embedder.py      (resemblyzer)     → Voice Embedding (256-dim)
         ├── db.py            (SQLite)          → data/ads.db へ保存
-        ├── llm_analyzer.py  (Ollama REST)     → 広告解析テキスト [Phase 3]
-        └── pattern_analyzer.py (SQL 集計)     → パターンレポート [Phase 4]
+        ├── llm_analyzer.py  (Ollama REST)     → 広告解析テキスト
+        └── pattern_analyzer.py (SQL 集計)     → パターンレポート (CLI)
 ```
 
 ### モジュール責務
@@ -113,7 +113,7 @@ shared/spotify_ad_*.wav  ← spotify-ad-recorder（Windows）が書き込む
 | `src/watcher.py` | `shared/` を watchdog で監視。新規 `.wav` を pipeline へ渡す |
 | `src/pipeline.py` | transcriber/diarizer/embedder を呼び出し、DB へ保存するオーケストレーター |
 | `src/transcriber.py` | faster-whisper ラッパー。モデルサイズは環境変数 `WHISPER_MODEL` |
-| `src/diarizer.py` | pyannote-audio 3.x ラッパー |
+| `src/diarizer.py` | pyannote-audio 4.x ラッパー |
 | `src/embedder.py` | resemblyzer ラッパー。embedding を numpy float32 BLOB で保存 |
 | `src/db.py` | SQLite スキーマ定義・CRUD ヘルパー |
 | `src/llm_analyzer.py` | Ollama REST API クライアント（Phase 3） |
@@ -150,8 +150,12 @@ llm_analyses    -- Ollama 解析結果（商品名・広告種別・要約・ト
 |------|-----------|------|
 | `SHARED_DIR` | `/app/shared` | WAV ファイル監視ディレクトリ |
 | `DATA_DIR` | `/app/data` | SQLite DB 保存先 |
-| `WHISPER_MODEL` | `small` | tiny / base / small / medium |
-| `OLLAMA_HOST` | `host.docker.internal:11434` | Ollama エンドポイント（Phase 3） |
+| `WHISPER_MODEL` | `small` | tiny / base / small / medium / large-v3 |
+| `HF_TOKEN` | `""` | Hugging Face アクセストークン（pyannote-audio 必須） |
+| `DIARIZE_MODEL` | `pyannote/speaker-diarization-3.1` | 話者分離モデル ID |
+| `OLLAMA_HOST` | `host.docker.internal:11434` | Ollama エンドポイント |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama で使用するモデル名 |
+| `WATCHDOG_FORCE_POLLING` | `0` | `1` でポーリング監視（Docker Desktop / Windows 向け） |
 
 ---
 
