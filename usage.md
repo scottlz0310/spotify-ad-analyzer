@@ -86,13 +86,13 @@ Copy-Item tests/fixtures/sample.wav "shared/spotify_ad_$ts.wav"
 **処理ログの例：**
 
 ```
-analyzer  | INFO  src.watcher — New ad file detected: spotify_ad_2026-03-15_09-00-00.wav
-analyzer  | INFO  src.transcriber — Transcribed: ...
-analyzer  | INFO  src.diarizer — Diarized: ...
-analyzer  | INFO  src.embedder — Embedded: ...
-analyzer  | INFO  src.llm_analyzer — LLM analysis complete
-analyzer  | INFO  src.pipeline — Pipeline complete: ad_id=1 status=done
+analyzer-1  | INFO  src.watcher — New ad file detected: spotify_ad_20260315_090000.wav
+analyzer-1  | INFO  faster_whisper — Processing audio with duration 00:30.000
+analyzer-1  | INFO  faster_whisper — Detected language 'ja' with probability 0.95
+analyzer-1  | INFO  src.watcher — Pipeline complete: ad_id=1 spotify_ad_20260315_090000.wav
 ```
+
+> **Note:** Ollama が利用不可の場合は LLM 解析がスキップされ、`WARNING src.pipeline — Ollama unavailable; LLM analysis skipped` が出力されます。パイプラインは正常に完了します。
 
 ---
 
@@ -141,7 +141,7 @@ for r in conn.execute('SELECT * FROM llm_analyses'):
 
 ## パターン分析レポートを生成する
 
-`src/pattern_analyzer` CLI を使って集計レポートを JSON で出力します。
+`src.pattern_analyzer` CLI を使って集計レポートを JSON で出力します。
 
 ### コンテナ内で実行
 
@@ -215,4 +215,4 @@ uv run python -m src.pattern_analyzer report --db data/ads.db
 | WAV を置いても反応しない | Docker Desktop のファイル監視制限 | `.env` に `WATCHDOG_FORCE_POLLING=1` を追加 |
 | LLM 解析がスキップされる | Ollama が起動していない | `ollama serve` で起動・`OLLAMA_HOST` を確認 |
 | `status='error'` になる | パイプライン例外 | `SELECT error_message FROM ads WHERE status='error'` で確認 |
-| `blob_len` が 1024 でない | resemblyzer 初期化失敗 | コンテナログの `embedder` 行を確認 |
+| `bytes` が 1024 でない | resemblyzer 初期化失敗 | コンテナログを確認 |
