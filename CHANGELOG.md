@@ -9,7 +9,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- `src/pattern_analyzer.py` — SQL 集計 + CLI レポート（`hourly_frequency`・`ad_type_distribution`・`tone_distribution`・`detect_repeat_ads`、`PatternReport` 結果クラス、`python -m src.pattern_analyzer report` CLI）
+- `src/splitter.py` — WAV 無音区間検出 + 分割モジュール（`_rms_chunks`・`detect_silence_boundary`・`split_wav`・`split_if_needed`）
+- `tests/test_splitter.py` — 21 テスト（合成 WAV・境界検出精度・分割ファイル検証）
+
+### Changed
+- `src/watcher.py` — `_SplitFnProtocol`・`_default_split` 追加・`AdFileHandler` に `split_fn` DI パラメータ追加・`_handle()` をマルチパート対応にリファクタリング（テンポラリファイル自動クリーンアップ）
+- `tests/test_watcher.py` — `_make_handler` に no-op splitter 注入・split 動作テスト 5 件追加
+
+---
+
+## [0.5.0]
+
+### Added
+- `src/pattern_analyzer.py`— SQL 集計 + CLI レポート（`hourly_frequency`・`ad_type_distribution`・`tone_distribution`・`detect_repeat_ads`、`PatternReport` 結果クラス、`python -m src.pattern_analyzer report` CLI）
 - `tests/test_pattern_analyzer.py` — 25 テスト（tmp_path SQLite、cosine 類似度テスト、threshold バリデーションテスト、`main()` CLI テスト含む）
 
 ### Changed (from [Unreleased])

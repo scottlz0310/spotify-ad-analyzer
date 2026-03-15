@@ -48,7 +48,12 @@ class TestIsAdFile:
 
 class TestAdFileHandler:
     def _make_handler(self, tmp_path: Path, *, polling: bool = False) -> AdFileHandler:
-        return AdFileHandler(db_path=tmp_path / "ads.db", polling=polling)
+        # Inject a no-op splitter so tests do not require real WAV files on disk.
+        return AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            polling=polling,
+            split_fn=lambda p: [p],
+        )
 
     def test_on_closed_calls_pipeline_for_ad_file(self, tmp_path: Path) -> None:
         handler = self._make_handler(tmp_path)
@@ -62,8 +67,8 @@ class TestAdFileHandler:
 
     def test_on_closed_passes_correct_args(self, tmp_path: Path) -> None:
         db_path = tmp_path / "ads.db"
-        handler = AdFileHandler(db_path=db_path)
         audio = "/shared/spotify_ad_2026-01-01_00-00-00.wav"
+        handler = AdFileHandler(db_path=db_path, split_fn=lambda p: [p])
         event = _make_closed_event(audio)
 
         with patch("src.watcher.run_pipeline") as mock_pipeline:
@@ -177,6 +182,85 @@ class TestAdFileHandler:
             handler.on_closed(event)
 
         mock_pipeline.assert_not_called()
+
+    def test_split_fn_called_for_each_ad_file(self, tmp_path: Path) -> None:
+        """split_fn is invoked once per detected ad file."""
+        splits: list[Path] = []
+
+        def tracking_split(p: Path) -> list[Path]:
+            splits.append(p)
+            return [p]
+
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            split_fn=tracking_split,
+        )
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.return_value = MagicMock(ad_id=1)
+            handler.on_closed(event)
+
+        assert len(splits) == 1
+        assert splits[0] == Path("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+
+    def test_split_into_two_parts_calls_pipeline_twice(self, tmp_path: Path) -> None:
+        """When split_fn returns two paths, run_pipeline is called for each."""
+        audio = Path("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+        part1 = tmp_path / "spotify_ad_2026-01-01_00-00-00_part1.wav"
+        part2 = tmp_path / "spotify_ad_2026-01-01_00-00-00_part2.wav"
+        part1.touch()
+        part2.touch()
+
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            split_fn=lambda _p: [part1, part2],
+        )
+        event = _make_closed_event(str(audio))
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.return_value = MagicMock(ad_id=1)
+            handler.on_closed(event)
+
+        assert mock_pipeline.call_count == 2
+
+    def test_split_parts_deleted_after_pipeline(self, tmp_path: Path) -> None:
+        """Temp split files are removed after processing regardless of success."""
+        part1 = tmp_path / "spotify_ad_test_part1.wav"
+        part2 = tmp_path / "spotify_ad_test_part2.wav"
+        part1.touch()
+        part2.touch()
+        audio = Path("/shared/spotify_ad_test.wav")
+
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            split_fn=lambda _p: [part1, part2],
+        )
+        event = _make_closed_event(str(audio))
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.return_value = MagicMock(ad_id=1)
+            handler.on_closed(event)
+
+        assert not part1.exists()
+        assert not part2.exists()
+
+    def test_split_parts_deleted_even_on_pipeline_error(self, tmp_path: Path) -> None:
+        """Temp split files are cleaned up even when the pipeline raises."""
+        part1 = tmp_path / "spotify_ad_test_part1.wav"
+        part2 = tmp_path / "spotify_ad_test_part2.wav"
+        part1.touch()
+        part2.touch()
+        audio = Path("/shared/spotify_ad_test.wav")
+
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            split_fn=lambda _p: [part1, part2],
+        )
+        event = _make_closed_event(str(audio))
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.side_effect = RuntimeError("pipeline failed")
+            handler.on_closed(event)  # must not propagate
+
+        assert not part1.exists()
+        assert not part2.exists()
 
 
 # ---------------------------------------------------------------------------
