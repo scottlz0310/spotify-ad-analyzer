@@ -96,6 +96,18 @@ class AdFileHandler(FileSystemEventHandler):
         if self._polling:
             self._handle(event)
 
+    @override
+    def on_modified(self, event: FileSystemEvent) -> None:
+        """Retry a file that was not yet fully written when first detected.
+
+        In PollingObserver mode ``on_created`` fires as soon as the recorder
+        creates the file, which may be mid-write.  If ``split_fn`` raises
+        ``EOFError`` the path is removed from ``_seen`` so it can be retried
+        here on each subsequent modification event until the write completes.
+        """
+        if self._polling:
+            self._handle(event)
+
     def _get_parts(self, audio_path: Path, src_path: str) -> list[Path] | None:
         """Invoke split_fn and normalise the result.
 
@@ -105,6 +117,14 @@ class AdFileHandler(FileSystemEventHandler):
         """
         try:
             parts = self._split_fn(audio_path)
+        except EOFError:
+            # File is still being written by the recorder; retry on next event.
+            _logger.warning(
+                "WAV not ready yet (still recording?): %s — will retry",
+                audio_path.name,
+            )
+            self._seen.pop(src_path, None)
+            return None
         except Exception:
             _logger.exception("Split failed for %s; skipping", audio_path.name)
             self._seen.pop(src_path, None)

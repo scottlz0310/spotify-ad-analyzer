@@ -301,6 +301,73 @@ class TestAdFileHandler:
         seen: dict[str, None] = handler._seen  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         assert src not in seen
 
+    def test_on_modified_triggers_pipeline_in_polling_mode(
+        self, tmp_path: Path
+    ) -> None:
+        """on_modified must trigger the pipeline in polling mode (mid-write retry)."""
+        handler = self._make_handler(tmp_path, polling=True)
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.return_value = MagicMock(ad_id=1)
+            handler.on_modified(event)
+
+        mock_pipeline.assert_called_once()
+
+    def test_on_modified_ignored_in_inotify_mode(self, tmp_path: Path) -> None:
+        """on_modified must be a no-op when polling=False (inotify Observer mode)."""
+        handler = self._make_handler(tmp_path, polling=False)
+        event = _make_closed_event("/shared/spotify_ad_2026-01-01_00-00-00.wav")
+
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            handler.on_modified(event)
+
+        mock_pipeline.assert_not_called()
+
+    def test_eoferror_in_split_fn_logs_warning_and_allows_retry(
+        self, tmp_path: Path
+    ) -> None:
+        """EOFError (mid-write detection) must log WARNING and allow retry via _seen."""
+        src = "/shared/spotify_ad_still_recording.wav"
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            polling=True,
+            split_fn=lambda _p: (_ for _ in ()).throw(EOFError()),  # type: ignore[arg-type]
+        )
+        event = _make_closed_event(src)
+        with patch("src.watcher.run_pipeline"):
+            handler.on_created(event)
+
+        # File must not remain in _seen so on_modified can retry.
+        seen: dict[str, None] = handler._seen  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        assert src not in seen
+
+    def test_eoferror_retried_via_on_modified(self, tmp_path: Path) -> None:
+        """After EOFError on on_created, on_modified must successfully process."""
+        src = "/shared/spotify_ad_2026-01-01_00-00-00.wav"
+        call_count = 0
+
+        def split_fn_that_fails_once(p: Path) -> list[Path]:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise EOFError
+            return [p]
+
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            polling=True,
+            split_fn=split_fn_that_fails_once,
+        )
+        event = _make_closed_event(src)
+
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.return_value = MagicMock(ad_id=1)
+            handler.on_created(event)  # fails with EOFError → WARNING
+            handler.on_modified(event)  # file now complete → succeeds
+
+        mock_pipeline.assert_called_once()
+
 
 # ---------------------------------------------------------------------------
 # start_watcher
