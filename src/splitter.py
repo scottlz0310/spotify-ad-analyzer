@@ -30,6 +30,9 @@ def _rms_chunks(
         rate = w.getframerate()
         channels = w.getnchannels()
         sampwidth = w.getsampwidth()
+        if sampwidth != 2:  # noqa: PLR2004
+            msg = f"Only 16-bit WAV is supported; got {sampwidth * 8}-bit: {audio_path}"
+            raise ValueError(msg)
         chunk_frames = int(rate * chunk_ms / 1000)
         t = 0.0
         while True:
@@ -102,7 +105,7 @@ def detect_silence_boundary(
 
     # Silence may extend to the end of the search window.
     if silence_start is not None:
-        last_t = chunks[-1][0] if chunks else 0.0
+        last_t = (chunks[-1][0] + _CHUNK_MS / 1000) if chunks else 0.0
         end = min(search_end_sec, last_t)
         duration_ms = (end - silence_start) * 1000
         if duration_ms >= min_silence_ms:

@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased]
+## [0.6.0]
 
 ### Added
 - `src/splitter.py` — WAV 無音区間検出 + 分割モジュール（`_rms_chunks`・`detect_silence_boundary`・`split_wav`・`split_if_needed`）

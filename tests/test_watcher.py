@@ -262,6 +262,45 @@ class TestAdFileHandler:
         assert not part1.exists()
         assert not part2.exists()
 
+    def test_empty_split_result_falls_back_to_original(self, tmp_path: Path) -> None:
+        """When split_fn returns [], the handler falls back to the original file."""
+        audio = "/shared/spotify_ad_empty_split.wav"
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            split_fn=lambda _p: [],
+        )
+        event = _make_closed_event(audio)
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            mock_pipeline.return_value = MagicMock(ad_id=1)
+            handler.on_closed(event)
+
+        mock_pipeline.assert_called_once_with(Path(audio), tmp_path / "ads.db")
+
+    def test_split_fn_exception_does_not_propagate(self, tmp_path: Path) -> None:
+        """If split_fn raises, _handle must catch and log without propagating."""
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            split_fn=lambda _p: (_ for _ in ()).throw(OSError("corrupt WAV")),  # type: ignore[arg-type]
+        )
+        event = _make_closed_event("/shared/spotify_ad_corrupt.wav")
+        with patch("src.watcher.run_pipeline") as mock_pipeline:
+            handler.on_closed(event)  # must not propagate
+        mock_pipeline.assert_not_called()
+
+    def test_split_fn_exception_allows_retry(self, tmp_path: Path) -> None:
+        """After split_fn failure the file is removed from _seen for retry."""
+        src = "/shared/spotify_ad_corrupt.wav"
+        handler = AdFileHandler(
+            db_path=tmp_path / "ads.db",
+            split_fn=lambda _p: (_ for _ in ()).throw(OSError("corrupt WAV")),  # type: ignore[arg-type]
+        )
+        event = _make_closed_event(src)
+        with patch("src.watcher.run_pipeline"):
+            handler.on_closed(event)
+
+        seen: dict[str, None] = handler._seen  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        assert src not in seen
+
 
 # ---------------------------------------------------------------------------
 # start_watcher

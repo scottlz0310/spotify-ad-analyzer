@@ -96,6 +96,33 @@ class AdFileHandler(FileSystemEventHandler):
         if self._polling:
             self._handle(event)
 
+    def _get_parts(self, audio_path: Path, src_path: str) -> list[Path] | None:
+        """Invoke split_fn and normalise the result.
+
+        Returns a non-empty list of paths to process, or ``None`` if the split
+        failed (in which case *src_path* has already been removed from *_seen*
+        so the file can be retried on the next event).
+        """
+        try:
+            parts = self._split_fn(audio_path)
+        except Exception:
+            _logger.exception("Split failed for %s; skipping", audio_path.name)
+            self._seen.pop(src_path, None)
+            return None
+        if not parts:
+            _logger.warning(
+                "split_fn returned empty list for %s; falling back to original",
+                audio_path.name,
+            )
+            return [audio_path]
+        if len(parts) > 1:
+            _logger.info(
+                "Detected %d ads in %s - processing each part",
+                len(parts),
+                audio_path.name,
+            )
+        return parts
+
     def _handle(self, event: FileSystemEvent) -> None:
         """Shared handler for closed/created events."""
         if event.is_directory:
@@ -114,13 +141,9 @@ class AdFileHandler(FileSystemEventHandler):
         audio_path = Path(src_path)
         _logger.info("New ad file detected: %s", audio_path.name)
 
-        parts = self._split_fn(audio_path)
-        if len(parts) > 1:
-            _logger.info(
-                "Detected %d ads in %s — processing each part",
-                len(parts),
-                audio_path.name,
-            )
+        parts = self._get_parts(audio_path, src_path)
+        if parts is None:
+            return
 
         any_error = False
         for part_path in parts:

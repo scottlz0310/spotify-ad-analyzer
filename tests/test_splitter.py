@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from src.splitter import detect_silence_boundary, split_if_needed, split_wav
+from src.splitter import (
+    _rms_chunks,  # pyright: ignore[reportPrivateUsage]
+    detect_silence_boundary,
+    split_if_needed,
+    split_wav,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -62,6 +67,30 @@ def _make_single_wav(path: Path, *, duration_sec: float) -> Path:
 def _wav_duration(path: Path) -> float:
     with wave.open(str(path)) as w:
         return w.getnframes() / w.getframerate()
+
+
+def _make_8bit_wav(path: Path, *, duration_sec: float) -> Path:
+    """Create an 8-bit PCM WAV (unsupported by splitter)."""
+    with wave.open(str(path), "w") as w:
+        w.setnchannels(1)
+        w.setsampwidth(1)  # 8-bit
+        w.setframerate(_RATE)
+        n = int(duration_sec * _RATE)
+        w.writeframes(bytes([128] * n))  # 8-bit PCM (unsigned, midpoint=128)
+    return path
+
+
+# ---------------------------------------------------------------------------
+# _rms_chunks / sampwidth validation
+# ---------------------------------------------------------------------------
+
+
+class TestRmsChunks:
+    def test_rejects_non_16bit_wav(self, tmp_path: Path) -> None:
+        """8-bit WAV must raise ValueError with a clear message."""
+        wav = _make_8bit_wav(tmp_path / "ad.wav", duration_sec=5.0)
+        with pytest.raises(ValueError, match="16-bit"):
+            _ = _rms_chunks(wav)
 
 
 # ---------------------------------------------------------------------------
