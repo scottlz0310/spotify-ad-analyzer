@@ -108,12 +108,12 @@ class AdFileHandler(FileSystemEventHandler):
         if self._polling:
             self._handle(event)
 
-    def _get_parts(self, audio_path: Path, src_path: str) -> list[Path] | None:
+    def _get_parts(self, audio_path: Path) -> list[Path] | None:
         """Invoke split_fn and normalise the result.
 
         Returns a non-empty list of paths to process, or ``None`` if the split
-        failed (in which case *src_path* has already been removed from *_seen*
-        so the file can be retried on the next event).
+        failed and the caller should skip this event (the file can be retried
+        on the next event without any ``_seen`` manipulation here).
         """
         try:
             parts = self._split_fn(audio_path)
@@ -123,11 +123,9 @@ class AdFileHandler(FileSystemEventHandler):
                 "WAV not ready yet (still recording?): %s — will retry",
                 audio_path.name,
             )
-            self._seen.pop(src_path, None)
             return None
         except Exception:
             _logger.exception("Split failed for %s; skipping", audio_path.name)
-            self._seen.pop(src_path, None)
             return None
         if not parts:
             _logger.warning(
@@ -153,17 +151,18 @@ class AdFileHandler(FileSystemEventHandler):
         if src_path in self._seen:
             _logger.debug("Skipping already-processed file: %s", src_path)
             return
-        # Add before pipeline to prevent duplicate concurrent processing.
-        # Evict the oldest entry once the cap is exceeded.
-        self._seen[src_path] = None
-        if len(self._seen) > _MAX_SEEN:
-            _ = self._seen.popitem(last=False)
         audio_path = Path(src_path)
         _logger.info("New ad file detected: %s", audio_path.name)
 
-        parts = self._get_parts(audio_path, src_path)
+        parts = self._get_parts(audio_path)
         if parts is None:
             return
+
+        # Add to _seen only after a successful split to avoid spurious evictions
+        # of unrelated entries when PollingObserver retries mid-write files.
+        self._seen[src_path] = None
+        if len(self._seen) > _MAX_SEEN:
+            _ = self._seen.popitem(last=False)
 
         any_error = False
         for part_path in parts:

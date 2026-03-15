@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 from watchdog.events import FileClosedEvent
 
 from src.watcher import AdFileHandler, is_ad_file, start_watcher
+
+if TYPE_CHECKING:
+    import pytest
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -325,7 +330,7 @@ class TestAdFileHandler:
         mock_pipeline.assert_not_called()
 
     def test_eoferror_in_split_fn_logs_warning_and_allows_retry(
-        self, tmp_path: Path
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
         """EOFError (mid-write detection) must log WARNING and allow retry via _seen."""
         src = "/shared/spotify_ad_still_recording.wav"
@@ -335,9 +340,14 @@ class TestAdFileHandler:
             split_fn=lambda _p: (_ for _ in ()).throw(EOFError()),  # type: ignore[arg-type]
         )
         event = _make_closed_event(src)
-        with patch("src.watcher.run_pipeline"):
+        with (
+            patch("src.watcher.run_pipeline") as mock_pipeline,
+            caplog.at_level(logging.WARNING, logger="src.watcher"),
+        ):
             handler.on_created(event)
 
+        mock_pipeline.assert_not_called()
+        assert "will retry" in caplog.text
         # File must not remain in _seen so on_modified can retry.
         seen: dict[str, None] = handler._seen  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         assert src not in seen

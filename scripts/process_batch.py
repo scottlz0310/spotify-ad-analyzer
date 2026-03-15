@@ -34,7 +34,11 @@ def main(input_dir: Path, db_path: Path) -> None:
         split_dir.mkdir()
 
         for wav in wav_files:
-            parts = split_if_needed(wav, output_dir=split_dir)
+            try:
+                parts = split_if_needed(wav, output_dir=split_dir)
+            except Exception:
+                _logger.exception("  [FAIL] split failed for %s; skipping", wav.name)
+                continue
             _logger.info(
                 "%s  ->  %d part(s): %s",
                 wav.name,
