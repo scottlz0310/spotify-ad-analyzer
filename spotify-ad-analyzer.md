@@ -232,18 +232,19 @@ services:
 
 ---
 
-## 8. 今後のフェーズ
+## 8. 実装済みフェーズ
 
-### Phase 3 — LLM 解析（`feat/llm-analyzer`）
+### Phase 3 — LLM 解析（`feat/llm-analyzer` / `feat/llm-integration`） ✅
 
 - `src/llm_analyzer.py`: Ollama REST API クライアント（`/api/generate`）
 - プロンプトテンプレート: 商品名・広告種別・スクリプト要約・トーン抽出
 - `src/pipeline.py` への統合: 文字起こし完了後に LLM を呼び出し `llm_analyses` テーブルへ保存
+- `OllamaError` 発生時は graceful degradation（ログを残してスキップ）
 
-### Phase 4 — パターン分析（`feat/pattern-analyzer`）
+### Phase 4 — パターン分析（`feat/pattern-analyzer`） ✅
 
 - `src/pattern_analyzer.py`: SQL 集計クエリ
-  - 時間帯別広告頻度
-  - 声紋類似度による繰り返し広告検出
-  - 広告種別・トーン分布
-- CLI コマンド: `python -m src.pattern_analyzer report`
+  - 時間帯別広告頻度（`hourly_frequency`）
+  - 広告種別・トーン分布（`ad_type_distribution`、`tone_distribution`）
+  - 声紋類似度による繰り返し広告検出（`detect_repeat_ads`、cosine similarity）
+- CLI コマンド: `python -m src.pattern_analyzer report --db PATH --threshold FLOAT`
