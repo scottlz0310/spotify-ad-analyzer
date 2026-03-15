@@ -101,7 +101,7 @@ def analyze_transcript(
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=300) as resp:  # noqa: S310
             raw_data = resp.read()
     except urllib.error.URLError as exc:
         msg = f"Cannot reach Ollama at {config.OLLAMA_HOST}: {exc}"

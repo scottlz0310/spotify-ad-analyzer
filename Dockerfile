@@ -30,6 +30,7 @@ COPY --from=builder /app/.venv /app/.venv
 
 # Copy source code
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app
