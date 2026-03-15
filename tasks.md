@@ -13,16 +13,18 @@ _なし_
 
 ## 未着手
 
-### Phase 4 — パターン分析
-
-- [ ] `feat/pattern-analyzer` — SQL 集計 + CLI レポート
-  - [ ] `src/pattern_analyzer.py`（時間帯別頻度・繰り返し声紋・広告種別集計）
-  - [ ] CLI コマンド（`python -m src.pattern_analyzer report`）
-  - [ ] `tests/test_pattern_analyzer.py`（インメモリ DB 使用）
+_なし_
 
 ---
 
 ## 完了
+
+### パターン分析 CLI（feat/pattern-analyzer） — 2026-03-14
+
+- [x] `src/pattern_analyzer.py`（時間帯別頻度・広告種別分布・トーン分布・cosine 類似度による繰り返し声紋検出）
+- [x] `PatternReport` 結果クラス（`to_dict()` → JSON 出力）
+- [x] CLI コマンド（`python -m src.pattern_analyzer report --db PATH --threshold FLOAT`）
+- [x] `tests/test_pattern_analyzer.py`（19 テスト、tmp_path SQLite、カバレッジ 93%）
 
 ### LLM パイプライン統合（feat/llm-integration） — 2026-03-14
 
