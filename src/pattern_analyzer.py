@@ -107,7 +107,11 @@ class PatternReport:
 
 
 def hourly_frequency(conn: sqlite3.Connection) -> list[HourlyFrequencyRow]:
-    """Return per-hour ad counts for *done* ads, ordered 0-23."""
+    """Return per-hour ad counts for *done* ads, ordered ascending by hour.
+
+    Only hours that have at least one *done* ad are included; hours with zero
+    ads are omitted.
+    """
     sql = """
         SELECT
             CAST(strftime('%H', recorded_at) AS INTEGER) AS hour,
@@ -180,7 +184,21 @@ def detect_repeat_ads(
     Embeddings are loaded from SQLite and cosine similarity is computed in
     Python via numpy.  Only ``done`` ads with an embedding (``speaker=""``)
     are considered.  Each pair is returned once (a.id < b.id).
+
+    Args:
+        conn: Open SQLite connection.
+        threshold: Cosine-similarity inclusion threshold; must be in [0.0, 1.0].
+
+    Raises:
+        ValueError: If *threshold* is outside [0.0, 1.0].
+
+    Note:
+        This builds a full N x N similarity matrix (O(N**2) memory).  For very
+        large databases consider chunking or incremental row-wise dot products.
     """
+    if not (0.0 <= threshold <= 1.0):
+        msg = f"threshold must be in [0.0, 1.0], got {threshold!r}"
+        raise ValueError(msg)
     sql = """
         SELECT ve.ad_id, a.filename, ve.embedding
         FROM voice_embeddings ve
@@ -219,7 +237,7 @@ def detect_repeat_ads(
                         filename_a=filenames[i],
                         ad_id_b=ids[j],
                         filename_b=filenames[j],
-                        similarity=round(sim, 6),
+                        similarity=sim,
                     )
                 )
     return sorted(pairs, key=lambda p: p["similarity"], reverse=True)
@@ -246,6 +264,15 @@ def report(db_path: Path, threshold: float = 0.90) -> PatternReport:
 # ---------------------------------------------------------------------------
 
 
+def _threshold_type(value: str) -> float:
+    """Argparse type for cosine-similarity threshold; enforces [0.0, 1.0]."""
+    f = float(value)
+    if not (0.0 <= f <= 1.0):
+        msg = f"threshold must be in [0.0, 1.0], got {value!r}"
+        raise argparse.ArgumentTypeError(msg)
+    return f
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m src.pattern_analyzer",
@@ -262,14 +289,14 @@ def _build_parser() -> argparse.ArgumentParser:
     _ = rep.add_argument(
         "--threshold",
         metavar="FLOAT",
-        type=float,
+        type=_threshold_type,
         default=0.90,
         help="Cosine-similarity threshold for repeat-ad detection (default: 0.90).",
     )
     return parser
 
 
-def main(argv: list[str] | None = None) -> None:  # pragma: no cover
+def main(argv: list[str] | None = None) -> None:
     args = _build_parser().parse_args(argv)
     if args.command == "report":
         result = report(Path(args.db), threshold=args.threshold)

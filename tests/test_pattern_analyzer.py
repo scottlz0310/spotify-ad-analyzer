@@ -1,10 +1,12 @@
-"""Tests for src/pattern_analyzer.py — all use in-memory SQLite."""
+"""Tests for src/pattern_analyzer.py — all use a tmp_path on-disk SQLite file."""
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pytest
 
 from src import db
 from src.embedder import embedding_to_blob
@@ -13,6 +15,7 @@ from src.pattern_analyzer import (
     ad_type_distribution,
     detect_repeat_ads,
     hourly_frequency,
+    main,
     report,
     tone_distribution,
 )
@@ -41,7 +44,8 @@ def _insert_done_ad(
         "INSERT INTO ads (filename, recorded_at, status) VALUES (?, ?, 'done')",
         (filename, recorded_at),
     )
-    return int(cur.lastrowid or 0)
+    assert cur.lastrowid is not None, "INSERT returned no lastrowid"
+    return int(cur.lastrowid)
 
 
 def _insert_embedding(
@@ -364,3 +368,52 @@ def test_report_custom_threshold(tmp_path: Path) -> None:
     # threshold kwarg is accepted without error
     r = report(db_path, threshold=0.95)
     assert isinstance(r, PatternReport)
+
+
+# ---------------------------------------------------------------------------
+# threshold validation
+# ---------------------------------------------------------------------------
+
+
+def test_detect_repeat_ads_invalid_threshold_above(tmp_path: Path) -> None:
+    db_path = _make_db(tmp_path)
+    with (
+        db.connect(db_path) as conn,
+        pytest.raises(ValueError, match="threshold must be in"),
+    ):
+        _ = detect_repeat_ads(conn, threshold=1.1)
+
+
+def test_detect_repeat_ads_invalid_threshold_below(tmp_path: Path) -> None:
+    db_path = _make_db(tmp_path)
+    with (
+        db.connect(db_path) as conn,
+        pytest.raises(ValueError, match="threshold must be in"),
+    ):
+        _ = detect_repeat_ads(conn, threshold=-0.1)
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def test_main_report_outputs_json(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    db_path = _make_db(tmp_path)
+    main(["report", "--db", str(db_path)])
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert set(data.keys()) == {
+        "hourly_frequency",
+        "ad_type_distribution",
+        "tone_distribution",
+        "repeat_ad_pairs",
+    }
+
+
+def test_main_report_invalid_threshold_exits(tmp_path: Path) -> None:
+    db_path = _make_db(tmp_path)
+    with pytest.raises(SystemExit):
+        main(["report", "--db", str(db_path), "--threshold", "2.0"])
