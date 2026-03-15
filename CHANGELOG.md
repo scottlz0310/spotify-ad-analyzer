@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+---
+
+## [0.7.0]
+
+### Added
+- `dashboard/` — Streamlit Web ダッシュボード（`docker compose up dashboard` で起動、ポート 8501）
+  - **概要ページ** — 総広告数・書き起こし済み数・平均尺など KPI + 直近 10 件一覧
+  - **広告一覧ページ** — テキスト検索・言語/話者数/尺フィルタ付きテーブル
+  - **広告詳細ページ** — 全文書き起こし・話者タイムライン（Plotly・MM:SS軸）・WAV 再生・セグメント表・LLM 解析
+  - **話者類似度ページ** — コサイン類似度ランキングバーチャート / 全件ヒートマップ
+- `docker-compose.yml` に `dashboard` サービス追加（ポート 8501、`depends_on: analyzer`）
+
+---
+
 ## [0.6.0]
 
 ### Added

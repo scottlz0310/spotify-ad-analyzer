@@ -13,3 +13,14 @@ services:
       HF_TOKEN: ${HF_TOKEN:-}
       WATCHDOG_FORCE_POLLING: ${WATCHDOG_FORCE_POLLING:-0}
     restart: unless-stopped
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./shared:/app/shared:ro
+      - ./data:/app/data
+    restart: unless-stopped
+    depends_on:
+      - analyzer
