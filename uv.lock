@@ -2909,7 +2909,7 @@ requires-dist = [
     { name = "pyannote-audio", specifier = ">=4.0.4" },
     { name = "resemblyzer", specifier = ">=0.1.4" },
     { name = "setuptools", specifier = "<83" },
-    { name = "soundfile", specifier = ">=0.12.1" },
+    { name = "soundfile", specifier = ">=0.13.1" },
     { name = "watchdog", specifier = ">=6.0.0" },
 ]
 

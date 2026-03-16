@@ -11,7 +11,7 @@ dependencies = [
     "pyannote-audio>=4.0.4",
     "resemblyzer>=0.1.4",
     "setuptools<83",  # webrtcvad needs pkg_resources; removed in setuptools 81+
-    "soundfile>=0.12.1",
+    "soundfile>=0.13.1",
     "watchdog>=6.0.0",
 ]
 
