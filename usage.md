@@ -120,10 +120,12 @@ http://localhost:8501
 ### ダッシュボードのみ起動する場合
 
 ```powershell
-docker compose up dashboard
+docker compose up --no-deps dashboard
 ```
 
-> **Note:** ダッシュボードは `data/ads.db` を読み取り専用でマウントします。  
+> **Note:** `docker-compose.yml` では `dashboard` が `depends_on: analyzer` を持つため、
+> `-d`/`--no-deps` なしで `docker compose up dashboard` を実行すると `analyzer` も起動します。  
+> ダッシュボードは `data/ads.db` を含む `data/` ボリュームを読み取り専用（`:ro`）でマウントするため、
 > `analyzer` が処理中でも安全に参照できます。
 
 ---

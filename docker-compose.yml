@@ -20,7 +20,7 @@ services:
       - "8501:8501"
     volumes:
       - ${HOST_SHARED_DIR:-./shared}:/app/shared:ro
-      - ./data:/app/data
+      - ./data:/app/data:ro
     restart: unless-stopped
     depends_on:
       - analyzer
