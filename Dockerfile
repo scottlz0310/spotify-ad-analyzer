@@ -22,7 +22,8 @@ FROM python:3.14-slim
 WORKDIR /app
 
 # ffmpeg is required by torchcodec (used by pyannote.audio for audio decoding).
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && \
+# libsndfile1 is required by soundfile, which is used to bypass torchcodec for diarization.
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libsndfile1 && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy only the pre-built virtual environment from the builder

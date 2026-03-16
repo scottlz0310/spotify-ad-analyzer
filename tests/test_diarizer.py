@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import torch
 
 from src import diarizer
 
@@ -133,10 +134,19 @@ def test_diarize_loads_pipeline_when_none(monkeypatch: pytest.MonkeyPatch) -> No
         )
 
 
-def test_diarize_calls_pipeline_with_str_path() -> None:
+def test_diarize_calls_pipeline_with_waveform_dict() -> None:
+    """Pipeline must receive a waveform dict, not a file-path string.
+
+    soundfile is used to load audio first so that the torchcodec/FFmpeg
+    decoder inside pyannote-audio is bypassed entirely.
+    """
     pl = _make_pipeline()
     _ = diarizer.diarize(SAMPLE_WAV, pipeline=pl)
-    pl.assert_called_once_with(str(SAMPLE_WAV))
+    pl.assert_called_once()
+    call_arg = pl.call_args.args[0]
+    assert isinstance(call_arg, dict)
+    assert isinstance(call_arg["waveform"], torch.Tensor)
+    assert isinstance(call_arg["sample_rate"], int)
 
 
 def test_load_pipeline_raises_on_none_result(monkeypatch: pytest.MonkeyPatch) -> None:

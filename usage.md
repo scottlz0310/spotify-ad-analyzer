@@ -96,6 +96,40 @@ analyzer-1  | INFO  src.watcher — Pipeline complete: ad_id=1 spotify_ad_202603
 
 ---
 
+## Web ダッシュボードで解析結果を見る
+
+`docker compose up` を実行するだけでダッシュボードも自動で起動します。
+
+### アクセス
+
+ブラウザで以下の URL を開いてください：
+
+```
+http://localhost:8501
+```
+
+### ページ構成
+
+| ページ | 内容 |
+|--------|------|
+| **🎵 トップ（概要）** | 広告総数・文字起こし済み件数・平均時間などのサマリー |
+| **📋 広告一覧** | 処理済み WAV ファイルの一覧。ステータス・言語・時間でフィルタリング可能 |
+| **🔍 広告詳細** | 選択した広告の文字起こし全文・話者セグメント・LLM 解析結果 |
+| **🔊 話者類似度** | Voice Embedding（256-dim）を使った話者間のコサイン類似度マトリクス |
+
+### ダッシュボードのみ起動する場合
+
+```powershell
+docker compose up --no-deps dashboard
+```
+
+> **Note:** `docker-compose.yml` では `dashboard` が `depends_on: analyzer` を持つため、
+> `-d`/`--no-deps` なしで `docker compose up dashboard` を実行すると `analyzer` も起動します。  
+> ダッシュボードは `data/ads.db` を含む `data/` ボリュームを読み取り専用（`:ro`）でマウントするため、
+> `analyzer` が処理中でも安全に参照できます。
+
+---
+
 ## 解析結果を確認する
 
 ### DB の内容を確認
