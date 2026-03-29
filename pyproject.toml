@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 dependencies = [
     "faster-whisper>=1.2.1",
-    "numpy>=2.4.3",
+    "numpy>=2.4.4",
     "pyannote-audio>=4.0.4",
     "resemblyzer>=0.1.4",
     "setuptools<83",  # webrtcvad needs pkg_resources; removed in setuptools 81+
