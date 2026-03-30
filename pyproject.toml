@@ -12,6 +12,8 @@ dependencies = [
     "resemblyzer>=0.1.4",
     "setuptools<83",  # webrtcvad needs pkg_resources; removed in setuptools 81+
     "soundfile>=0.13.1",
+    "torch>=2.10.0",
+    "torchaudio>=2.10.0",
     "watchdog>=6.0.0",
 ]
 
@@ -80,3 +82,25 @@ pythonpath = ["src", "dashboard"]
 [tool.coverage.run]
 branch = true
 source = ["src"]
+
+# ---------------------------------------------------------------------------
+# uv: CPU-only PyTorch wheels (CI / development)
+#
+# torch and torchaudio ship separate wheel sets per CUDA major version.
+# When renovate bumps torchaudio independently of torch the bundled
+# libcudart.so version can diverge (e.g. torchaudio 2.11 needs .so.13 but
+# torch 2.10 only provides .so.12), breaking CI on every lock-file refresh.
+#
+# Using the PyTorch CPU index eliminates the CUDA runtime dependency
+# entirely for both packages.  Production deployments that need GPU should
+# install CUDA-specific wheels separately (e.g. torch --index-url
+# https://download.pytorch.org/whl/cu128).
+# ---------------------------------------------------------------------------
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchaudio = [{ index = "pytorch-cpu" }]
