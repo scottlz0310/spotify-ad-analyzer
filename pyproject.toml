@@ -13,7 +13,7 @@ dependencies = [
     "setuptools<83",  # webrtcvad needs pkg_resources; removed in setuptools 81+
     "soundfile>=0.13.1",
     "torch>=2.10.0",
-    "torchaudio>=2.10.0",
+    "torchaudio>=2.11.0",
     "watchdog>=6.0.0",
 ]
 

@@ -2769,7 +2769,7 @@ requires-dist = [
     { name = "setuptools", specifier = "<83" },
     { name = "soundfile", specifier = ">=0.13.1" },
     { name = "torch", specifier = ">=2.10.0", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "torchaudio", specifier = ">=2.10.0", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torchaudio", specifier = ">=2.11.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "watchdog", specifier = ">=6.0.0" },
 ]
 
