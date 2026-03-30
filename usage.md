@@ -225,6 +225,68 @@ uv run python -m src.pattern_analyzer report --db data/ads.db
 
 ---
 
+## フォルダ内の WAV をまとめて処理する（バッチ処理）
+
+`shared/` を監視する watcher ではなく、すでにフォルダに溜まっている WAV ファイルを
+一括処理したい場合は `scripts/process_batch.py` を使います。
+
+### 構文
+
+```
+python scripts/process_batch.py <input_dir> <db_path>
+```
+
+| 引数 | 説明 |
+|------|------|
+| `<input_dir>` | `spotify_ad_*.wav` が置かれているディレクトリ |
+| `<db_path>` | 結果を保存する SQLite DB ファイルパス（存在しなければ自動作成） |
+
+### コンテナ内で実行する（推奨）
+
+```powershell
+# shared/ 内のファイルを処理して data/ads.db に保存
+docker compose exec analyzer python scripts/process_batch.py /app/shared /app/data/ads.db
+
+# 別ディレクトリのファイルを別 DB に保存する例
+docker compose exec analyzer python scripts/process_batch.py /app/dropbox /app/data/dropbox_ads.db
+```
+
+コンテナが起動していない場合は `run` で起動しながら実行できます：
+
+```powershell
+docker compose run --rm analyzer python scripts/process_batch.py /app/shared /app/data/ads.db
+```
+
+### ローカルで実行する（uv）
+
+```powershell
+uv run python scripts/process_batch.py shared data/ads.db
+```
+
+### 動作
+
+1. `<input_dir>` から `spotify_ad_*.wav` をファイル名順に列挙する
+2. 長尺ファイルはセグメント単位で自動分割（`src/splitter.py`）
+3. 各パートに対してフルパイプライン（文字起こし → 話者分離 → 声紋抽出 → LLM 解析）を実行
+4. 結果を `<db_path>` の SQLite DB に保存する
+5. 処理完了後、一時分割ファイルは自動削除される（元ファイルは変更されない）
+
+### 出力例
+
+```
+2026-03-16 10:00:01 INFO batch: Found 5 WAV files in /app/shared
+2026-03-16 10:00:01 INFO batch: spotify_ad_2026-03-15_08-00-00.wav  ->  1 part(s): ['spotify_ad_2026-03-15_08-00-00.wav']
+2026-03-16 10:00:45 INFO batch:   [OK] ad_id=1  spotify_ad_2026-03-15_08-00-00.wav
+2026-03-16 10:01:30 INFO batch:   [OK] ad_id=2  spotify_ad_2026-03-15_09-00-00.wav
+...
+2026-03-16 10:05:00 INFO batch: Done. Processed 5 parts total -> /app/data/ads.db
+```
+
+> **Note:** 処理に失敗したファイルはスキップされ、ログに `[FAIL]` が出力されます。
+> 他のファイルの処理は継続されます。
+
+---
+
 ## 環境変数リファレンス
 
 | 変数名 | デフォルト値 | 説明 |
