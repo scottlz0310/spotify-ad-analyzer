@@ -12,7 +12,7 @@ dependencies = [
     "resemblyzer>=0.1.4",
     "setuptools<83",  # webrtcvad needs pkg_resources; removed in setuptools 81+
     "soundfile>=0.13.1",
-    "torch>=2.10.0",
+    "torch>=2.11.0",
     "torchaudio>=2.11.0",
     "watchdog>=6.0.0",
 ]
@@ -23,7 +23,7 @@ dev = [
     "pytest-xdist>=3.8.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.9",
-    "basedpyright>=1.38.4",
+    "basedpyright>=1.39.0",
     "pre-commit>=4.5.1",
 ]
 
