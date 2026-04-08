@@ -2,7 +2,7 @@
 # ── builder stage ────────────────────────────────────────────────────────────
 FROM python:3.14-slim AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.4 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.11.5 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
