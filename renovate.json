@@ -35,8 +35,8 @@
   ],
   "packageRules": [
     {
-      "description": "Wait for setup-uv manifest (astral-sh/versions) to catch up before bumping uv",
-      "matchPackageNames": ["astral-sh/uv", "astral-sh/setup-uv"],
+      "description": "Wait for uv GitHub release artifacts to settle before bumping uv",
+      "matchPackageNames": ["astral-sh/uv"],
       "minimumReleaseAge": "3 days"
     }
   ]

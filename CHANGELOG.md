@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
-- uv バージョン管理を `pyproject.toml` の `[tool.uv] required-version` に一本化。CI workflow の `setup-uv` は `version` 引数を削除して `pyproject.toml` を自動参照、`Dockerfile`/`dashboard/Dockerfile` は `ARG UV_VERSION` で外出し。`renovate.json` に GitHub Releases datasource の customManager を追加し、`setup-uv` の manifest 反映ラグを `minimumReleaseAge: "3 days"` で吸収するようにした。
+- uv バージョン管理を `pyproject.toml` の `[tool.uv] required-version` に一本化。CI workflow は `pyproject.toml` を読み取って GitHub Releases の該当 artifact を checksum 検証付きでインストールし、`Dockerfile`/`dashboard/Dockerfile` は `ARG UV_VERSION` で外出し。`renovate.json` に GitHub Releases datasource の customManager を追加し、release artifact の反映ラグを `minimumReleaseAge: "3 days"` で吸収するようにした。
 
 ---
 
