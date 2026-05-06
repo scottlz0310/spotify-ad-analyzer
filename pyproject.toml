@@ -96,6 +96,12 @@ source = ["src"]
 # install CUDA-specific wheels separately (e.g. torch --index-url
 # https://download.pytorch.org/whl/cu128).
 # ---------------------------------------------------------------------------
+# Single source of truth for the uv version used across CI and Docker builds.
+# CI reads this value directly; the Dockerfiles' UV_VERSION ARG is kept in
+# lockstep by Renovate.
+[tool.uv]
+required-version = "==0.11.10"
+
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"

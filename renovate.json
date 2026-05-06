@@ -8,5 +8,43 @@
     "github>scottlz0310/renovate-config//presets/options/automerge",
     "github>scottlz0310/renovate-config//presets/options/schedule",
     "github>scottlz0310/renovate-config//presets/options/security"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track uv version in pyproject.toml [tool.uv] required-version",
+      "managerFilePatterns": ["/(^|/)pyproject\\.toml$/"],
+      "matchStrings": [
+        "required-version\\s*=\\s*\"==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "astral-sh/uv",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Track uv version in Dockerfile ARG UV_VERSION defaults",
+      "managerFilePatterns": ["/(^|/)Dockerfile$/"],
+      "matchStrings": [
+        "ARG UV_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "astral-sh/uv",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Let the GitHub Releases custom managers own uv version bumps",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/astral-sh/uv"],
+      "enabled": false
+    },
+    {
+      "description": "Wait for uv GitHub release artifacts to settle before bumping uv",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["astral-sh/uv"],
+      "minimumReleaseAge": "3 days"
+    }
   ]
 }
