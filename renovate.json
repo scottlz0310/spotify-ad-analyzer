@@ -35,7 +35,14 @@
   ],
   "packageRules": [
     {
+      "description": "Let the GitHub Releases custom managers own uv version bumps",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/astral-sh/uv"],
+      "enabled": false
+    },
+    {
       "description": "Wait for uv GitHub release artifacts to settle before bumping uv",
+      "matchDatasources": ["github-releases"],
       "matchPackageNames": ["astral-sh/uv"],
       "minimumReleaseAge": "3 days"
     }
