@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- uv バージョン管理を `pyproject.toml` の `[tool.uv] required-version` に一本化。CI workflow の `setup-uv` は `version` 引数を削除して `pyproject.toml` を自動参照、`Dockerfile`/`dashboard/Dockerfile` は `ARG UV_VERSION` で外出し。`renovate.json` に customManager を追加し、`setup-uv` の manifest 反映ラグを `minimumReleaseAge: "3 days"` で吸収するようにした。
+
 ---
 
 ## [0.7.0]

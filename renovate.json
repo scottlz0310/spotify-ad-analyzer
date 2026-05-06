@@ -8,5 +8,36 @@
     "github>scottlz0310/renovate-config//presets/options/automerge",
     "github>scottlz0310/renovate-config//presets/options/schedule",
     "github>scottlz0310/renovate-config//presets/options/security"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track uv version in pyproject.toml [tool.uv] required-version",
+      "managerFilePatterns": ["/(^|/)pyproject\\.toml$/"],
+      "matchStrings": [
+        "required-version\\s*=\\s*\"==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "ghcr.io/astral-sh/uv",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Track uv version in Dockerfile ARG UV_VERSION defaults",
+      "managerFilePatterns": ["/(^|/)Dockerfile$/"],
+      "matchStrings": [
+        "ARG UV_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "ghcr.io/astral-sh/uv",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Wait for setup-uv manifest (astral-sh/versions) to catch up before bumping uv",
+      "matchPackageNames": ["ghcr.io/astral-sh/uv", "astral-sh/setup-uv"],
+      "minimumReleaseAge": "3 days"
+    }
   ]
 }
