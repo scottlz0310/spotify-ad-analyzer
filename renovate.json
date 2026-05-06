@@ -17,8 +17,8 @@
       "matchStrings": [
         "required-version\\s*=\\s*\"==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
       ],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "ghcr.io/astral-sh/uv",
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "astral-sh/uv",
       "versioningTemplate": "semver"
     },
     {
@@ -28,15 +28,15 @@
       "matchStrings": [
         "ARG UV_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
       ],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "ghcr.io/astral-sh/uv",
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "astral-sh/uv",
       "versioningTemplate": "semver"
     }
   ],
   "packageRules": [
     {
       "description": "Wait for setup-uv manifest (astral-sh/versions) to catch up before bumping uv",
-      "matchPackageNames": ["ghcr.io/astral-sh/uv", "astral-sh/setup-uv"],
+      "matchPackageNames": ["astral-sh/uv", "astral-sh/setup-uv"],
       "minimumReleaseAge": "3 days"
     }
   ]
