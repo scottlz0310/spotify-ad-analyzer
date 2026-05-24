@@ -23,7 +23,7 @@ dev = [
     "pytest-xdist>=3.8.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.14",
-    "basedpyright>=1.39.5",
+    "basedpyright>=1.39.6",
     "pre-commit>=4.6.0",
 ]
 
