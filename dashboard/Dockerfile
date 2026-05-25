@@ -1,7 +1,7 @@
 FROM python:3.14-slim
 
 # Kept in lockstep with pyproject.toml's [tool.uv] required-version by Renovate.
-ARG UV_VERSION=0.11.15
+ARG UV_VERSION=0.11.16
 COPY --from=ghcr.io/astral-sh/uv:${UV_VERSION} /uv /usr/local/bin/uv
 
 WORKDIR /app
